@@ -9,7 +9,7 @@ services:
       - ./conf/supervisord.conf:/etc/supervisor/supervisord.conf
       - ./conf/xdebug.ini:/usr/local/etc/php/conf.d/docker-php-ext-gd.ini
     environment:
-      PHP_IDE_CONFIG: 'serverName=passport.localhost'
+      PHP_IDE_CONFIG: 'serverName=laravel.localhost'
       XDEBUG_MODE: debug
       XDEBUG_CONFIG: "client_host=host.docker.internal client_port=9003"
     restart: always

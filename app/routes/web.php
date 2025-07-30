@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\AuthController;
+use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -15,8 +15,10 @@ Route::get('/', function () {
     ]);
 });
 
-Route::get('/dashboard', [AuthController::class, 'authForm'])->middleware(['auth', 'verified'])->name('dashboard');
-Route::post('/saveData', [AuthController::class, 'saveData'])->middleware(['auth', 'verified'])->name('saveData');
+Route::get('/dashboard', [TransactionController::class, 'authForm'])->middleware(['auth', 'verified'])->name('dashboard');
+Route::post('/transactions', [TransactionController::class, 'saveData'])->middleware(['auth', 'verified'])->name('saveData');
+Route::put('/transactions', [TransactionController::class, 'update'])->middleware(['auth', 'verified'])->name('updateData');
+Route::delete('/transactions', [TransactionController::class, 'destroy'])->middleware(['auth', 'verified'])->name('deleteData');
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

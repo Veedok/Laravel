@@ -1,7 +1,16 @@
-.table_container{
+.table_container {
     max-width: 1400px;
     margin: 50px auto 0;
 }
-.date_row{
+
+.date_row {
     text-align: end;
+}
+.action_head {
+    text-align: center;
+}
+.action_row {
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
 }

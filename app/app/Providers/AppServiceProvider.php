@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\DTO\AbstractDTO;
+use App\DTO\DestroyDTO;
 use App\DTO\TransactionDTO;
 use App\DTO\UpdateTransactionDTO;
 use App\Exceptions\DtoValidationException;
@@ -15,7 +16,8 @@ class AppServiceProvider extends ServiceProvider
 
     const array DTO = [
         TransactionDTO::class,
-        UpdateTransactionDTO::class
+        UpdateTransactionDTO::class,
+        DestroyDTO::class
     ];
     /**
      * Register any application services.

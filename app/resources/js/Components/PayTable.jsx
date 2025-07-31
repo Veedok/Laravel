@@ -7,6 +7,8 @@ const TransactionsTable = ({ data }) => {
     const [editingId, setEditingId] = useState(null);
     const [errorMessage, setErrorMessage] = useState(null);
     const [successMessage, setSuccessMessage] = useState(null);
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState(null);
     const [formData, setFormData] = useState({
         id: null,
         title: '',
@@ -69,7 +71,7 @@ const TransactionsTable = ({ data }) => {
             const data = await response.json();
 
             const newTransaction = {
-                id: editingId || Math.max(...transactions.map(t => t.id), 0) + 1,
+                id: data.id,
                 title: formData.title,
                 changeBalance: formData.changeBalance,
                 sum: parseFloat(formData.sum),
@@ -101,30 +103,41 @@ const TransactionsTable = ({ data }) => {
         setIsModalOpen(true);
         setErrorMessage(null);
     };
+    const handleDeleteClick = (id) => {
+        setItemToDelete(id);
+        setDeleteModalOpen(true);
+    };
+    const handleConfirmDelete = async () => {
+        if (!itemToDelete) return;
 
-    const handleDelete = async (id) => {
-        if (confirm('Вы уверены, что хотите удалить эту запись?')) {
-            try {
-                const response = await fetch(route('deleteData'), {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
-                    body: JSON.stringify({ id })
-                });
+        try {
+            const response = await fetch(route('deleteData'), {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({ id: itemToDelete })
+            });
 
-                if (!response.ok) {
-                    throw new Error('Ошибка при удалении');
-                }
-
-                setTransactions(prev => prev.filter(t => t.id !== id));
-                showSuccess('Запись успешно удалена');
-            } catch (error) {
-                setErrorMessage(error.message || 'Ошибка при удалении');
+            if (!response.ok) {
+                throw new Error('Ошибка при удалении');
             }
+
+            setTransactions(prev => prev.filter(t => t.id !== itemToDelete));
+            showSuccess('Запись успешно удалена');
+        } catch (error) {
+            setErrorMessage(error.message || 'Ошибка при удалении');
+        } finally {
+            setDeleteModalOpen(false);
+            setItemToDelete(null);
         }
+    };
+
+    const handleCancelDelete = () => {
+        setDeleteModalOpen(false);
+        setItemToDelete(null);
     };
 
     const resetForm = () => {
@@ -253,7 +266,7 @@ const TransactionsTable = ({ data }) => {
                                         ✏️
                                     </button>
                                     <button
-                                        onClick={() => handleDelete(item.id)}
+                                        onClick={() => handleDeleteClick(item.id)}
                                         className="text-red-600 hover:text-red-900"
                                         title="Удалить"
                                     >
@@ -275,6 +288,31 @@ const TransactionsTable = ({ data }) => {
                 </button>
             </div>
             {/* Модальное окно */}
+            {deleteModalOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+                        <div className="p-6">
+                            <h2 className="text-xl font-semibold mb-4">Подтверждение удаления</h2>
+                            <p className="mb-6">Вы уверены, что хотите удалить эту запись? Это действие нельзя отменить.</p>
+
+                            <div className="flex justify-end space-x-3">
+                                <button
+                                    onClick={handleCancelDelete}
+                                    className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+                                >
+                                    Нет, отменить
+                                </button>
+                                <button
+                                    onClick={handleConfirmDelete}
+                                    className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                                >
+                                    Да, удалить
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
                     <div className="bg-white rounded-lg shadow-xl w-full max-w-md">

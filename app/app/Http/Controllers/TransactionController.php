@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\DTO\DestroyDTO;
 use App\DTO\TransactionDTO;
 use App\DTO\UpdateTransactionDTO;
 use Illuminate\Http\Request;
@@ -28,13 +29,13 @@ class TransactionController extends Controller
 
     public function saveData(TransactionDTO $request)
     {
-        $request->requestUser->transactions()->create([
+        $transaction = $request->requestUser->transactions()->create([
             "name" => $request->name,
             "type"=>$request->changeBalance ? 'income' : 'expense',
             "sum" => $request->sum,
             "date" => $request->date,
         ]);
-        return response()->json(null, 204);
+        return response()->json(['status' => 'ok', 'id' => $transaction->id]);
     }
 
     public function update(UpdateTransactionDTO $request)
@@ -46,11 +47,12 @@ class TransactionController extends Controller
             $request->transaction->type = $request->changeBalance ? 'income' : 'expense';
         }
         $request->transaction->save();
-        return response()->json(null, 204);
+        return response()->json(['status' => 'ok']);
     }
 
-    public function destroy()
+    public function destroy(DestroyDTO $request)
     {
-        return back();
+        $request->getTransaction()->delete();
+        return response()->json(['status' => 'ok']);
     }
 }

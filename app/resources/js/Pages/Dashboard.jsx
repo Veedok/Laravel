@@ -7,11 +7,11 @@ export default function Dashboard({ transactions }) {
         <AuthenticatedLayout
             header={
                 <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Dashboard
+                    Таблица баланса
                 </h2>
             }
         >
-            <Head title="Dashboard"/>
+            <Head title="Таблица Баланса"/>
 
             <PayTable
                 data={transactions}

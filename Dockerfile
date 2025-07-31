@@ -1,12 +1,23 @@
 FROM php:8.4-fpm
 
+# Установка зависимостей
 RUN apt-get update && apt-get install -y \
+    curl \
+    gnupg \
+    lsb-release \
+    && curl -sSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor > /usr/share/keyrings/postgresql.gpg \
+    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
+    && apt-get update
+
+# Установка PostgreSQL клиента нужной версии
+RUN apt-get install -y \
+    postgresql-client-17 \
+    libpq-dev \
     libpng-dev \
     libssh2-1 \
     libssh2-1-dev \
     libjpeg-dev \
     libfreetype6-dev \
-    libpq-dev \
     libzip-dev \
     unzip \
     mc \
@@ -14,9 +25,8 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     libgmp-dev \
     iputils-ping \
-    curl \
-    gnupg \
     supervisor \
+    && rm -rf /var/lib/apt/lists/* \
     && curl -sL https://deb.nodesource.com/setup_18.x | bash - \
     && apt-get install -y nodejs \
     && pecl install xdebug ssh2 \
@@ -24,8 +34,7 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-install gmp \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install gd mysqli zip pdo pdo_pgsql pdo_mysql \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get clean
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 

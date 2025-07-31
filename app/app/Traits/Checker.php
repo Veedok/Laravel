@@ -28,8 +28,9 @@ trait Checker
 
     /**
      * Создание ответа с ошибками
+     * @return JsonResponse
      */
-    public function makeResponse()
+    public function makeResponse(): JsonResponse
     {
         $error = $this->error;
         $this->error = [];
@@ -38,11 +39,7 @@ trait Checker
             "status" => $error['code'],
             "errors" => $error['messages']
         ];
-//        return response()->json($result, $error['code']);
-        return back()->withErrors([
-            'title' => 'Название обязательно',
-            'sum' => 'Некорректная сумма'
-        ]);
+        return response()->json($result, $error['code']);
     }
 
 

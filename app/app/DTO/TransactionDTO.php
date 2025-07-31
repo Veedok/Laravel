@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Validator;
 class TransactionDTO extends AbstractDTO
 {
 
-    private function __construct(
+    protected function __construct(
         public ?string $name = null,
         public bool $changeBalance = false,
         public ?float $sum = null,
@@ -24,15 +24,15 @@ class TransactionDTO extends AbstractDTO
     {
         $data = $request->all();
         $validator = Validator::make($data, [
-            'title' => 'required|string|max:255',
-            'changeBalance' => 'required|bool',
+            'name' => 'required|string|max:255',
+            'type' => 'required|bool',
             'sum' => 'required|numeric',
             'date' => 'required|date'
         ]);
         if ($validator->fails()) {
             return static::handleValidationErrors($validator);
         }
-        $result = new static($data['title'], $data['changeBalance'], $data['sum'], new Carbon($data['date']));
+        $result = new static($data['name'], $data['type'], $data['sum'], new Carbon($data['date']));
         $user = auth()->user();
         $user !== null && $result->setRequestUser($user);
         return $result->validate();

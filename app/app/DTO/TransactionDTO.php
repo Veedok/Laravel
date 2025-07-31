@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Validator;
 class TransactionDTO extends AbstractDTO
 {
 
-    private function __construct(
+    protected function __construct(
         public ?string $name = null,
         public bool $changeBalance = false,
         public ?float $sum = null,

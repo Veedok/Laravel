@@ -13,6 +13,7 @@ class TransactionController extends Controller
     {
         $transactions = auth()->user()?->transactions()->get();
         return Inertia::render('Dashboard', [
+            'csrfToken' => csrf_token(),
             'transactions' => $transactions->map(function ($item) {
                 return [
                     'id' => $item->id,
@@ -33,7 +34,7 @@ class TransactionController extends Controller
             "sum" => $request->sum,
             "date" => $request->date,
         ]);
-        return redirect()->route('dashboard')->with('success', 'Операция выполнена');
+        return response()->json(null, 204);
     }
 
     public function update(UpdateTransactionDTO $request)
@@ -45,7 +46,7 @@ class TransactionController extends Controller
             $request->transaction->type = $request->changeBalance ? 'income' : 'expense';
         }
         $request->transaction->save();
-        return back()->with('success', 'Операция выполнена успешно');
+        return response()->json(null, 204);
     }
 
     public function destroy()

@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { useForm } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import '../../css/payTable.css';
 
 const TransactionsTable = ({ data }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
-    const { data: formData, setData, post, put, reset, delete: destroy } = useForm({
+    const [errorMessage, setErrorMessage] = useState(null);
+    const [successMessage, setSuccessMessage] = useState(null);
+    const [formData, setFormData] = useState({
         id: null,
         title: '',
         changeBalance: true,
@@ -15,49 +17,81 @@ const TransactionsTable = ({ data }) => {
 
     const [transactions, setTransactions] = useState(data);
 
-    const handleSubmit = (e) => {
+    const showSuccess = (message) => {
+        setSuccessMessage(message);
+        setTimeout(() => setSuccessMessage(null), 3000);
+    };
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
+        setErrorMessage(null);
 
         const payload = {
             id: editingId,
             name: formData.title,
-            type: formData.changeBalance ? 'income' : 'expense',
+            type: formData.changeBalance,
             sum: parseFloat(formData.sum),
             date: formData.date
         };
 
-        const method = editingId ? put : post;
-        const url = editingId ? route('updateData') : route('saveData');
+        try {
+            const url = editingId ? route('updateData') : route('saveData');
+            const method = editingId ? 'PUT' : 'POST';
 
-        method(url, payload, {
-            preserveScroll: true,
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            onSuccess: () => {
-                const newTransaction = {
-                    id: editingId || Math.max(...transactions.map(t => t.id), 0) + 1,
-                    title: formData.title,
-                    changeBalance: formData.changeBalance,
-                    sum: parseFloat(formData.sum),
-                    date: new Date(formData.date).toLocaleDateString('ru-RU')
-                };
+            const response = await fetch(url, {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify(payload)
+            });
 
-                setTransactions(prev =>
-                    editingId
-                        ? prev.map(t => t.id === editingId ? newTransaction : t)
-                        : [...prev, newTransaction]
-                );
+            if (!response.ok) {
+                const errorData = await response.json();
 
-                resetForm();
+                // Если ошибка приходит в виде массива
+                if (Array.isArray(errorData.errors)) {
+                    throw new Error(errorData.errors.join('\n'));
+                }
+                // Если ошибка приходит в виде объекта
+                else if (typeof errorData.errors === 'object') {
+                    const errors = Object.values(errorData.errors).flat();
+                    throw new Error(errors.join('\n'));
+                }
+                // Если ошибка приходит строкой
+                else {
+                    throw new Error(errorData.errors || 'Ошибка сервера');
+                }
             }
-        });
+
+            const data = await response.json();
+
+            const newTransaction = {
+                id: editingId || Math.max(...transactions.map(t => t.id), 0) + 1,
+                title: formData.title,
+                changeBalance: formData.changeBalance,
+                sum: parseFloat(formData.sum),
+                date: new Date(formData.date).toLocaleDateString('ru-RU')
+            };
+
+            setTransactions(prev =>
+                editingId
+                    ? prev.map(t => t.id === editingId ? newTransaction : t)
+                    : [...prev, newTransaction]
+            );
+
+            showSuccess(editingId ? 'Запись успешно обновлена' : 'Запись успешно добавлена');
+            resetForm();
+        } catch (error) {
+            setErrorMessage(error.message || 'Произошла ошибка');
+        }
     };
 
     const handleEdit = (transaction) => {
         setEditingId(transaction.id);
-        setData({
+        setFormData({
             id: transaction.id,
             title: transaction.title,
             changeBalance: transaction.changeBalance,
@@ -65,28 +99,52 @@ const TransactionsTable = ({ data }) => {
             date: new Date(transaction.date.split('.').reverse().join('-')).toISOString().split('T')[0]
         });
         setIsModalOpen(true);
+        setErrorMessage(null);
     };
 
-    const handleDelete = (id) => {
+    const handleDelete = async (id) => {
         if (confirm('Вы уверены, что хотите удалить эту запись?')) {
-            destroy(route('deleteData'), {
-                data: { id },
-                preserveScroll: true,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                onSuccess: () => {
-                    setTransactions(prev => prev.filter(t => t.id !== id));
+            try {
+                const response = await fetch(route('deleteData'), {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({ id })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Ошибка при удалении');
                 }
-            });
+
+                setTransactions(prev => prev.filter(t => t.id !== id));
+                showSuccess('Запись успешно удалена');
+            } catch (error) {
+                setErrorMessage(error.message || 'Ошибка при удалении');
+            }
         }
     };
 
     const resetForm = () => {
-        reset();
+        setFormData({
+            id: null,
+            title: '',
+            changeBalance: true,
+            sum: '',
+            date: new Date().toISOString().split('T')[0]
+        });
         setEditingId(null);
         setIsModalOpen(false);
+        setErrorMessage(null);
+    };
+
+    const handleInputChange = (field, value) => {
+        setFormData(prev => ({
+            ...prev,
+            [field]: value
+        }));
     };
 
     const totals = transactions.reduce((acc, item) => {
@@ -100,6 +158,13 @@ const TransactionsTable = ({ data }) => {
 
     return (
         <div className="space-y-4 table_container">
+            {/* Уведомление об успехе */}
+            {successMessage && (
+                <div className="fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-md shadow-lg z-50">
+                    {successMessage}
+                </div>
+            )}
+
             {/* Блок с суммами и кнопкой добавления */}
             <div className="overflow-x-auto">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 min-w-full" style={{minWidth: 'fit-content'}}>
@@ -218,16 +283,26 @@ const TransactionsTable = ({ data }) => {
                                 {editingId ? 'Редактировать запись' : 'Добавить новую запись'}
                             </h2>
 
+                            {errorMessage && (
+                                <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
+                                    <ul className="list-disc pl-5">
+                                        {errorMessage.split('\n').map((line, index) => (
+                                            <li key={index}>{line}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
                             <form onSubmit={handleSubmit}>
                                 <div className="mb-4">
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Название
+                                    Название
                                     </label>
                                     <input
                                         type="text"
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md"
                                         value={formData.title}
-                                        onChange={(e) => setData('title', e.target.value)}
+                                        onChange={(e) => handleInputChange('title', e.target.value)}
                                         required
                                     />
                                 </div>
@@ -239,7 +314,7 @@ const TransactionsTable = ({ data }) => {
                                     <select
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md"
                                         value={formData.changeBalance}
-                                        onChange={(e) => setData('changeBalance', e.target.value === 'true')}
+                                        onChange={(e) => handleInputChange('changeBalance', e.target.value === 'true')}
                                         required
                                     >
                                         <option value={true}>Приход</option>
@@ -256,7 +331,7 @@ const TransactionsTable = ({ data }) => {
                                         step="0.01"
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md"
                                         value={formData.sum}
-                                        onChange={(e) => setData('sum', e.target.value)}
+                                        onChange={(e) => handleInputChange('sum', e.target.value)}
                                         required
                                     />
                                 </div>
@@ -269,7 +344,7 @@ const TransactionsTable = ({ data }) => {
                                         type="date"
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md"
                                         value={formData.date}
-                                        onChange={(e) => setData('date', e.target.value)}
+                                        onChange={(e) => handleInputChange('date', e.target.value)}
                                         required
                                     />
                                 </div>

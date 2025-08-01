@@ -8,26 +8,24 @@ services:
       - ./app:/var/www/app
       - ./conf/supervisord.conf:/etc/supervisor/supervisord.conf
       - ./conf/xdebug.ini:/usr/local/etc/php/conf.d/docker-php-ext-gd.ini
-    environment:
-      PHP_IDE_CONFIG: 'serverName=laravel.localhost'
-      XDEBUG_MODE: debug
-      XDEBUG_CONFIG: "client_host=host.docker.internal client_port=9003"
     restart: always
+    network_mode: host  # Для SMTP
     extra_hosts:
-      - "host.docker.internal:host-gateway"
-    networks:
-      default:
+      - "laravel_db:127.0.0.1"  # Доступ к БД
+    environment:
+      - DB_HOST=laravel_db
+
   nginx:
     image: nginx:latest
+    network_mode: host  # ← Важное изменение для доступа извне!
     volumes:
       - ./conf/default.conf:/etc/nginx/conf.d/default.conf
       - ./app:/var/www/app
-    networks:
-      default:
-        ipv4_address: 172.20.84.10
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - laravel
     restart: always
+
   laravel_db:
     image: postgres:latest
     environment:
@@ -35,7 +33,7 @@ services:
       POSTGRES_PASSWORD: IcdNBs3bRY
       POSTGRES_DB: my_laravel_db
     ports:
-      - "5438:5432"
+      - "5438:5432"  # Оставляем проброс порта
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
@@ -45,10 +43,12 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      default:
+      default:  # Оставляем в bridge-сети
+
 networks:
   default:
     name: develop
     external: true
+
 volumes:
   postgres_data:

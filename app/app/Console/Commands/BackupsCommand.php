@@ -2,9 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Mail\DatabaseBackupMail;
+use App\Services\Telegram;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Mail;
 use RuntimeException;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
@@ -16,7 +15,7 @@ class BackupsCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'db:backup-send {email}';
+    protected $signature = 'db:backup-send';
 
     /**
      * The console command description.
@@ -41,9 +40,12 @@ class BackupsCommand extends Command
         try {
             $process->mustRun();
             $this->info('Database backup created successfully: ' . $backupFileName);
-            $email = $this->argument('email');
-            Mail::to($email)->send(new DatabaseBackupMail($backupPath));
-            $this->info('Backup sent to email: ' . $email);
+            $telegram = new Telegram();
+            $result = $telegram->sendFile(
+                env('TELEGRAM_CHAT_ID'),
+                $backupPath,
+                "Бэкап БД от ".now()->format('d.m.Y')
+            );
         } catch (ProcessFailedException $exception) {
             $this->error('Backup failed: ' . $exception->getMessage());
         }

@@ -12,7 +12,7 @@ class TransactionController extends Controller
 {
     public function authForm()
     {
-        $transactions = auth()->user()?->transactions()->get();
+        $transactions = auth()->user()?->transactions()->orderBy('date', 'desc')->get();
         return Inertia::render('Dashboard', [
             'csrfToken' => csrf_token(),
             'transactions' => $transactions->map(function ($item) {

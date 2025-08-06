@@ -1,54 +1,42 @@
 services:
-  laravel:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    command: supervisord -n -c /etc/supervisor/supervisord.conf
+  app:
+    build: .
+    container_name: laravel_app
+    restart: unless-stopped
     volumes:
       - ./app:/var/www/app
-      - ./conf/supervisord.conf:/etc/supervisor/supervisord.conf
-      - ./conf/xdebug.ini:/usr/local/etc/php/conf.d/docker-php-ext-gd.ini
-    restart: always
-    network_mode: host  # Для SMTP
-    extra_hosts:
-      - "laravel_db:127.0.0.1"  # Доступ к БД
-    environment:
-      - DB_HOST=laravel_db
+    networks:
+      - laravel_network
 
   nginx:
-    image: nginx:latest
-    network_mode: host  # ← Важное изменение для доступа извне!
+    image: nginx:alpine
+    container_name: laravel_nginx
+    ports:
+      - "80:80"
+      - "443:443"
     volumes:
       - ./conf/default.conf:/etc/nginx/conf.d/default.conf
       - ./app:/var/www/app
       - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
-      - laravel
-    restart: always
-
-  laravel_db:
-    image: postgres:latest
-    environment:
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: IcdNBs3bRY
-      POSTGRES_DB: my_laravel_db
-    ports:
-      - "5438:5432"  # Оставляем проброс порта
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    restart: unless-stopped
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U root -d passport" ]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      - app
     networks:
-      default:  # Оставляем в bridge-сети
+      - laravel_network
 
+  db:
+    image: postgres:15-alpine
+    container_name: laravel_db
+    environment:
+      POSTGRES_PASSWORD: your_strong_password
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - laravel_network
+    ports:
+      - "5432:5432"
 networks:
-  default:
-    name: develop
-    external: true
+  laravel_network:
+    driver: bridge
 
 volumes:
-  postgres_data:
+  pgdata:

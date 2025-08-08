@@ -22,3 +22,6 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+../Dockerfile
+../conf
+../docker-compose.yaml

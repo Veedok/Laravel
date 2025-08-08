@@ -1,3 +1,4 @@
 Dockerfile
 /conf
 docker-compose.yaml
+/server-conf/*

@@ -9,4 +9,5 @@ enum Errors
     const string VALIDATION_ERROR = 'valid_error';
     const string TRANSACTION_NOT_FOUND = 'transaction_not_found';
     const string NOTING_CHANGE = 'noting_change';
+    const string TABLE_NOT_FOUND = 'table_not_found';
 }

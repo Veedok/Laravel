@@ -3,56 +3,44 @@
 namespace App\Http\Controllers;
 
 use App\DTO\DestroyDTO;
+use App\DTO\TableDataDTO;
 use App\DTO\TransactionDTO;
 use App\DTO\UpdateTransactionDTO;
+use App\Services\TableService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class TransactionController extends Controller
 {
-    public function authForm()
+
+    public function __construct(
+        private readonly TableService $tableService
+    )
     {
-        $transactions = auth()->user()?->transactions()->orderBy('date', 'desc')->get();
-        return Inertia::render('Dashboard', [
-            'csrfToken' => csrf_token(),
-            'transactions' => $transactions->map(function ($item) {
-                return [
-                    'id' => $item->id,
-                    'title' => $item->name,
-                    'changeBalance' => $item->type === 'income',
-                    'sum' => $item->sum,
-                    'date' => $item->date->format('d.m.Y')
-                ];
-            })
-        ]);
+
+    }
+    public function dashboard()
+    {
+        return $this->tableService->getTable();
     }
 
     public function saveData(TransactionDTO $request)
     {
-        $transaction = $request->requestUser->transactions()->create([
-            "name" => $request->name,
-            "type"=>$request->changeBalance ? 'income' : 'expense',
-            "sum" => $request->sum,
-            "date" => $request->date,
-        ]);
-        return response()->json(['status' => 'ok', 'id' => $transaction->id]);
+        return $this->tableService->save($request);
     }
 
     public function update(UpdateTransactionDTO $request)
     {
-        (isset($request->name)) && $request->transaction->name = $request->name;
-        (isset($request->date)) && $request->transaction->date = $request->date;
-        (isset($request->sum)) && $request->transaction->sum = $request->sum;
-        if (isset($request->changeBalance)){
-            $request->transaction->type = $request->changeBalance ? 'income' : 'expense';
-        }
-        $request->transaction->save();
-        return response()->json(['status' => 'ok']);
+        return $this->tableService->update($request);
     }
 
     public function destroy(DestroyDTO $request)
     {
-        $request->getTransaction()->delete();
-        return response()->json(['status' => 'ok']);
+        return $this->tableService->destroy($request);
+    }
+
+    public function getTableData(TableDataDTO $request)
+    {
+        return $this->tableService->getTableData($request);
     }
 }

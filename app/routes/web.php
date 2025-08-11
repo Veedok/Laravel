@@ -10,7 +10,8 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-Route::get('/dashboard', [TransactionController::class, 'authForm'])->middleware(['auth', 'verified'])->name('dashboard');
+Route::post('/myEndpoint', [TransactionController::class, 'getTableData'])->middleware(['auth', 'verified']);
+Route::get('/dashboard', [TransactionController::class, 'dashboard'])->middleware(['auth', 'verified'])->name('dashboard');
 Route::post('/transactions', [TransactionController::class, 'saveData'])->middleware(['auth', 'verified'])->name('saveData');
 Route::put('/transactions', [TransactionController::class, 'update'])->middleware(['auth', 'verified'])->name('updateData');
 Route::delete('/transactions', [TransactionController::class, 'destroy'])->middleware(['auth', 'verified'])->name('deleteData');

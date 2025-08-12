@@ -5,7 +5,6 @@ import CarouselButtons from "@/Components/CarouselButtons.jsx";
 import React, {useState, useEffect} from "react";
 import axios from 'axios';
 
-// Анимированный компонент загрузки
 const LoadingSpinner = () => (
     <div className="flex flex-col items-center justify-center py-8 space-y-4">
         <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
@@ -13,7 +12,6 @@ const LoadingSpinner = () => (
     </div>
 );
 
-// Анимированный компонент ошибки
 const ErrorMessage = ({message, onRetry}) => (
     <div className="max-w-md mx-auto p-6 bg-red-50 rounded-lg shadow-sm">
         <div className="flex flex-col items-center space-y-4">
@@ -33,19 +31,18 @@ const ErrorMessage = ({message, onRetry}) => (
     </div>
 );
 
-export default function Dashboard({tables}) {
+export default function Dashboard({tables: initialTables}) {
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [tables, setTables] = useState(initialTables);
     const [activeTableId, setActiveTableId] = useState(null);
 
-    // Находим активную таблицу при первом рендере
     useEffect(() => {
         const initialActiveId = Object.keys(tables).find(key => tables[key].active === true);
         setActiveTableId(initialActiveId);
     }, [tables]);
 
-    // Функция для загрузки транзакций
     const fetchTransactions = async (tableId) => {
         try {
             setLoading(true);
@@ -54,7 +51,18 @@ export default function Dashboard({tables}) {
                 tableId: tableId
             });
             setTransactions(response.data);
-            setActiveTableId(tableId);
+
+            // Обновляем активное состояние таблиц
+            setTables(prev => {
+                const updated = {};
+                Object.keys(prev).forEach(key => {
+                    updated[key] = {
+                        ...prev[key],
+                        active: key === tableId
+                    };
+                });
+                return updated;
+            });
         } catch (err) {
             setError('Не удалось загрузить данные. Пожалуйста, попробуйте позже.');
             console.error(err);
@@ -63,23 +71,41 @@ export default function Dashboard({tables}) {
         }
     };
 
-    // Загружаем транзакции при изменении activeTableId
     useEffect(() => {
         if (activeTableId) {
             fetchTransactions(activeTableId);
         }
     }, [activeTableId]);
 
-    // Обработчик клика по элементу карусели
     const handleItemClick = (id) => {
         setActiveTableId(id);
-        console.log(`Кнопка ${id} clicked`);
     };
 
-    // Функция для повторной попытки
     const handleRetry = () => {
         if (activeTableId) {
             fetchTransactions(activeTableId);
+        }
+    };
+
+    const handleAddItem = async (name) => {
+        try {
+            const response = await axios.put(`/table`, {
+                name: name
+            });
+
+            if (response.status === 200) {
+                setTables(prev => ({
+                    ...prev,
+                    [response.data.id]: {
+                        name: name,
+                        active: false
+                    }
+                }));
+                return true;
+            }
+        } catch (error) {
+            console.error('Error adding item:', error);
+            return false;
         }
     };
 
@@ -94,8 +120,8 @@ export default function Dashboard({tables}) {
             <Head title="Таблица Баланса"/>
             <CarouselButtons
                 items={tables}
-                onAddClick={() => console.log("Добавить clicked")}
                 onItemClick={handleItemClick}
+                onAddItem={handleAddItem}
             />
 
             {loading ? (
@@ -103,7 +129,7 @@ export default function Dashboard({tables}) {
             ) : error ? (
                 <ErrorMessage message={error} onRetry={handleRetry} />
             ) : (
-                <PayTable data={transactions} />
+                <PayTable data={transactions} activeTableId={activeTableId}  />
             )}
         </AuthenticatedLayout>
     );

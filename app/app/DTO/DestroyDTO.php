@@ -40,7 +40,7 @@ class DestroyDTO extends AbstractDTO
 
     protected function selfValidate(): void
     {
-        $transaction = $this->requestUser->transactions()->find($this->id);
+        $transaction = Transaction::find($this->id);
         if (!empty($transaction)){
             $this->transaction = $transaction;
         } else {

@@ -14,6 +14,7 @@ class UpdateTransactionDTO extends AbstractDTO
     public Transaction $transaction;
 
     protected function __construct(
+        public ?int    $table = null,
         public ?int    $id = null,
         public ?string $name = null,
         public ?bool   $changeBalance = false,
@@ -30,6 +31,7 @@ class UpdateTransactionDTO extends AbstractDTO
     {
         $data = $request->all();
         $validator = Validator::make($data, [
+            'tableId' => 'required|integer|exists:tables,id',
             'id' => 'required|integer',
             'name' => 'required_without_all:changeBalance,sum,date|string|max:255',
             'type' => 'required_without_all:title,sum,date|bool',
@@ -39,7 +41,7 @@ class UpdateTransactionDTO extends AbstractDTO
         if ($validator->fails()) {
             return static::handleValidationErrors($validator);
         }
-        $result = new static($data['id'], $data['name'], $data['type'], $data['sum'], new Carbon($data['date']));
+        $result = new static($data['tableId'], $data['id'], $data['name'], $data['type'], $data['sum'], new Carbon($data['date']));
         $user = auth()->user();
         $user !== null && $result->setRequestUser($user);
         return $result->validate();
@@ -48,7 +50,7 @@ class UpdateTransactionDTO extends AbstractDTO
     protected function selfValidate(): void
     {
         /** @var null|Transaction $transaction */
-        $transaction = $this->requestUser->transactions()->find($this->id);
+        $transaction = $this->requestUser->tables()->find($this->table)?->transactions()->find($this->id);
         if (!$transaction) {
             $this->makeError(Errors::TRANSACTION_NOT_FOUND, 400);
         } else {

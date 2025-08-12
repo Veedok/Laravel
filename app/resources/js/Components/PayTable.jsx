@@ -3,7 +3,7 @@ import {router} from '@inertiajs/react';
 import '../../css/payTable.css';
 
 
-const TransactionsTable = ({data}) => {
+const TransactionsTable = ({data, activeTableId}) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [errorMessage, setErrorMessage] = useState(null);
@@ -34,7 +34,8 @@ const TransactionsTable = ({data}) => {
             name: formData.title,
             type: formData.changeBalance,
             sum: parseFloat(formData.sum),
-            date: formData.date
+            date: formData.date,
+            tableId:activeTableId
         };
 
         try {

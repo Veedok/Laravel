@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\DTO\DestroyDTO;
+use App\DTO\NewTableDTO;
 use App\DTO\TableDataDTO;
 use App\DTO\TransactionDTO;
 use App\DTO\UpdateTransactionDTO;
@@ -42,5 +43,10 @@ class TransactionController extends Controller
     public function getTableData(TableDataDTO $request)
     {
         return $this->tableService->getTableData($request);
+    }
+
+    public function newTable(NewTableDTO $request)
+    {
+        return response()->json($this->tableService->newTable($request));
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\DTO\DestroyDTO;
+use App\DTO\NewTableDTO;
 use App\DTO\TableDataDTO;
 use App\DTO\TransactionDTO;
 use App\DTO\UpdateTransactionDTO;
@@ -14,23 +15,25 @@ class TableService
 
     public function getTable()
     {
-        $tables = [];
-        foreach (auth()->user()?->tables as $table) {
-            $tables[$table->id] = [
-                'name' => $table->name,
-                'active' => true
-            ];
-        }
+        $tables = auth()->user()?->tables
+            ->mapWithKeys(function ($table, $index) {
+                return [
+                    $table->id => [
+                        'name' => $table->name,
+                        'active' => $index === 0
+                    ]
+                ];
+            })
+            ->all();
         return Inertia::render('Dashboard', [
             'csrfToken' => csrf_token(),
             'tables' => $tables,
-
         ]);
     }
 
     public function save(TransactionDTO $request)
     {
-        $transaction = $request->requestUser->transactions()->create([
+        $transaction = $request->requestUser->tables()->find($request->table)?->transactions()->create([
             "name" => $request->name,
             "type" => $request->changeBalance ? 'income' : 'expense',
             "sum" => $request->sum,
@@ -60,9 +63,8 @@ class TableService
     public function getTableData(TableDataDTO $request)
     {
         $transactions = Table::find($request->id)->transactions;
-
         $result = [];
-        foreach ($transactions as $item){
+        foreach ($transactions as $item) {
             $result[] = [
                 'id' => $item->id,
                 'title' => $item->name,
@@ -71,15 +73,20 @@ class TableService
                 'date' => $item->date->format('d.m.Y')
             ];
         }
-//        $result = $transactions->map(function ($item) {
-//            return [
-//                'id' => $item->id,
-//                'title' => $item->name,
-//                'changeBalance' => $item->type === 'income',
-//                'sum' => $item->sum,
-//                'date' => $item->date->format('d.m.Y')
-//            ];
-//        });
         return response()->json($result);
+    }
+
+    /**
+     * @param NewTableDTO $request
+     * @return array
+     */
+    public function newTable(NewTableDTO $request): array
+    {
+        $table = $request->requestUser->tables()->create([
+            'name' => $request->name
+        ], [
+            'role_id' => 1
+        ]);
+        return ['id' => $table->id];
     }
 }

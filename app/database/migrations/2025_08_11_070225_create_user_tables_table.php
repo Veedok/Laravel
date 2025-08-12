@@ -16,7 +16,7 @@ return new class extends Migration {
             $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
             $table->id('table_id');
             $table->foreign('table_id')->references('id')->on('tables')->cascadeOnDelete();
-            $table->foreignId('role_id')->constrained('roles')->default(2);
+            $table->foreignId('role_id')->constrained('roles')->default(1);
             $table->primary(['user_id', 'table_id']);
         });
         DB::statement('

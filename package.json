@@ -11,7 +11,7 @@
     "url": "https://github.com/Veedok/Laravel.git"
   },
   "private": true,
-  "dependencies": {
-    "vite": "^7.0.6"
+  "devDependencies": {
+    "vite": "^7.1.1"
   }
 }

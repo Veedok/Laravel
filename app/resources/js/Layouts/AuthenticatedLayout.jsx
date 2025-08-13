@@ -28,7 +28,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                     href={route('dashboard')}
                                     active={route().current('dashboard')}
                                 >
-                                    Таблица баланса
+                                    Мои таблицы
                                 </NavLink>
                             </div>
                         </div>

@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\DTO\AbstractDTO;
 use App\DTO\DestroyDTO;
+use App\DTO\NewTableDTO;
+use App\DTO\TableDataDTO;
 use App\DTO\TransactionDTO;
 use App\DTO\UpdateTransactionDTO;
 use App\Exceptions\DtoValidationException;
@@ -17,7 +19,9 @@ class AppServiceProvider extends ServiceProvider
     const array DTO = [
         TransactionDTO::class,
         UpdateTransactionDTO::class,
-        DestroyDTO::class
+        DestroyDTO::class,
+        TableDataDTO::class,
+        NewTableDTO::class
     ];
     /**
      * Register any application services.
@@ -32,7 +36,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-
         URL::forceScheme('https');
         Vite::prefetch(concurrency: 3);
         foreach (self::DTO as $dtoClass) {

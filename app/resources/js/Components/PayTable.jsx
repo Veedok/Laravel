@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { router } from '@inertiajs/react';
+import React, {useState} from 'react';
+import {router} from '@inertiajs/react';
 import '../../css/payTable.css';
 
-const TransactionsTable = ({ data }) => {
+
+const TransactionsTable = ({data, activeTableId}) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [errorMessage, setErrorMessage] = useState(null);
@@ -33,7 +34,8 @@ const TransactionsTable = ({ data }) => {
             name: formData.title,
             type: formData.changeBalance,
             sum: parseFloat(formData.sum),
-            date: formData.date
+            date: formData.date,
+            tableId:activeTableId
         };
 
         try {
@@ -118,7 +120,7 @@ const TransactionsTable = ({ data }) => {
                     'Accept': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                 },
-                body: JSON.stringify({ id: itemToDelete })
+                body: JSON.stringify({id: itemToDelete})
             });
 
             if (!response.ok) {
@@ -167,7 +169,7 @@ const TransactionsTable = ({ data }) => {
             acc.expense += item.sum;
         }
         return acc;
-    }, { income: 0, expense: 0 });
+    }, {income: 0, expense: 0});
 
     return (
         <div className="space-y-4 table_container">
@@ -177,7 +179,6 @@ const TransactionsTable = ({ data }) => {
                     {successMessage}
                 </div>
             )}
-
             {/* Блок с суммами и кнопкой добавления */}
             <div className="overflow-x-auto">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 min-w-full" style={{minWidth: 'fit-content'}}>
@@ -293,7 +294,8 @@ const TransactionsTable = ({ data }) => {
                     <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
                         <div className="p-6">
                             <h2 className="text-xl font-semibold mb-4">Подтверждение удаления</h2>
-                            <p className="mb-6">Вы уверены, что хотите удалить эту запись? Это действие нельзя отменить.</p>
+                            <p className="mb-6">Вы уверены, что хотите удалить эту запись? Это действие нельзя
+                                отменить.</p>
 
                             <div className="flex justify-end space-x-3">
                                 <button
@@ -334,7 +336,7 @@ const TransactionsTable = ({ data }) => {
                             <form onSubmit={handleSubmit}>
                                 <div className="mb-4">
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Название
+                                        Название
                                     </label>
                                     <input
                                         type="text"

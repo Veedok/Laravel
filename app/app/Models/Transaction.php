@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property mixed $name
  * @property mixed $date
  * @property mixed|string $type
+ * @method static find(int|null $id)
  */
 class Transaction extends Model
 {

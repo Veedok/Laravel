@@ -2,6 +2,7 @@
 
 namespace App\DTO;
 
+use App\Enums\Errors;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -19,10 +20,10 @@ class TransactionDTO extends AbstractDTO
      * @param Carbon|null $date
      */
     protected function __construct(
-        public ?int $table = null,
+        public ?int    $table = null,
         public ?string $name = null,
-        public bool $changeBalance = false,
-        public ?float $sum = null,
+        public bool    $changeBalance = false,
+        public ?float  $sum = null,
         public ?Carbon $date = null
     )
     {
@@ -49,7 +50,7 @@ class TransactionDTO extends AbstractDTO
         if ($validator->fails()) {
             return static::handleValidationErrors($validator);
         }
-        $result = new static($data['tableId'],$data['name'], $data['type'], $data['sum'], new Carbon($data['date']));
+        $result = new static($data['tableId'], $data['name'], $data['type'], $data['sum'], new Carbon($data['date']));
         /** @var User $user */
         $user = auth()->user();
         $user !== null && $result->setRequestUser($user);
@@ -62,6 +63,8 @@ class TransactionDTO extends AbstractDTO
      */
     protected function selfValidate(): void
     {
-        // TODO: Implement selfValidate() method.
+        if (!$this->requestUser->checkPermission($this->table)) {
+            $this->makeError(Errors::ACCESS_DENIED, 403);
+        }
     }
 }

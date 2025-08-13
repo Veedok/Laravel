@@ -4,17 +4,18 @@ namespace App\Models;
 
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
+/** Модель пользователя */
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
     /**
-     * The attributes that are mass assignable.
-     *
+     * Изменяемые поля
      * @var list<string>
      */
     protected $fillable = [
@@ -24,8 +25,7 @@ class User extends Authenticatable
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
-     *
+     * Скрытые поля
      * @var list<string>
      */
     protected $hidden = [
@@ -46,13 +46,36 @@ class User extends Authenticatable
         ];
     }
 
-    public function tables()
+    /**
+     * Связь с таблицами
+     * @return BelongsToMany
+     */
+    public function tables(): BelongsToMany
     {
         return $this->belongsToMany(Table::class, 'user_tables')->withPivot('role_id');
     }
 
-    public function checkPermisions($id)
+    /**
+     * Проверка прав на таблицу
+     * @param $id
+     * @return bool
+     */
+    public function checkPermissions($id): bool
     {
         return $this->tables()->where('tables.id', $id)->exists();
+    }
+
+    /**
+     * Проверка прав на запись в таблице
+     * @param $id
+     * @return bool
+     */
+    public function checkPermission($id): bool
+    {
+        return $this->tables()
+            ->whereHas('transactions', function($query) use ($id) {
+                $query->where('id', $id);
+            })
+            ->exists();
     }
 }

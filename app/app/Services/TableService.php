@@ -15,20 +15,26 @@ class TableService
 
     /**
      * Метод отображения главной страницы
+     * @param int|null $tableId
      * @return Response
      */
-    public function getMainPage(): Response
+    public function getMainPage(?int $tableId): Response
     {
         $tables = auth()->user()?->tables
-            ->mapWithKeys(function ($table, $index) {
+            ->mapWithKeys(function ($table) use ($tableId) {
                 return [
                     $table->id => [
                         'name' => $table->name,
-                        'active' => $index === 0
+                        'active' => $table->id === $tableId
                     ]
                 ];
             })
             ->all();
+        $activeResult = array_unique(array_column($tables, 'active'));
+        if (count($activeResult) === 1 && empty(current($activeResult))){
+            $key = key($tables);
+            $tables[$key]['active'] = true;
+        }
         return Inertia::render('Dashboard', [
             'csrfToken' => csrf_token(),
             'tables' => $tables,

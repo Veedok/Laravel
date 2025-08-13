@@ -61,7 +61,7 @@
 }
 
 .carousel-item.active {
-    background: #4CAF50;
+    background: #8098dd;
     color: white;
     cursor: default;
 }
@@ -130,10 +130,10 @@
     }
 
     .mobile-menu-toggle {
-        width: 100%;
+        width: 50%;
         padding: 10px;
-        background: #333;
-        color: white;
+        background: #4470e4;
+        color: #fff;
         border: none;
         border-radius: 5px;
         margin-bottom: 10px;

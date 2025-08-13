@@ -6,6 +6,7 @@ use App\DTO\NewTableDTO;
 use App\DTO\TableDataDTO;
 use App\Services\TableService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Inertia\Response;
 
 /** Контроллер для работы с таблицами */
@@ -24,11 +25,12 @@ readonly class TablesController
 
     /**
      * Главная страница
+     * @param Request $request
      * @return Response
      */
-    public function mainPage(): Response
+    public function mainPage(Request $request): Response
     {
-        return $this->tableService->getMainPage();
+        return $this->tableService->getMainPage($request->session()->get('ActiveTable'));
     }
 
     /**

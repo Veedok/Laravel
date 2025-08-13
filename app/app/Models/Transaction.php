@@ -4,8 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
+ * Модель транзакции
  * @property mixed $sum
  * @property mixed $name
  * @property mixed $date
@@ -16,6 +18,7 @@ class Transaction extends Model
 {
     use HasFactory;
 
+    /** @var string[] Изменяемые поля */
     protected $fillable = [
         'user_id',
         'name',
@@ -25,16 +28,16 @@ class Transaction extends Model
     ];
 
     protected $casts = [
-        'type' => 'string', // Для ENUM поля
+        'type' => 'string',
         'date' => 'datetime',
         'sum' => 'float'
     ];
 
     /**
-     * Получить пользователя, которому принадлежит транзакция
+     * Связь с таблицей
      */
-    public function user()
+    public function table(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Table::class);
     }
 }

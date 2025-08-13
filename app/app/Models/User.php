@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -47,9 +46,13 @@ class User extends Authenticatable
         ];
     }
 
-    public function transactions()
+    public function tables()
     {
-        return $this->hasMany(Transaction::class);
+        return $this->belongsToMany(Table::class, 'user_tables')->withPivot('role_id');
     }
 
+    public function checkPermisions($id)
+    {
+        return $this->tables()->where('tables.id', $id)->exists();
+    }
 }

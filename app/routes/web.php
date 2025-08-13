@@ -1,16 +1,19 @@
 <?php
 
+use App\Http\Controllers\TablesController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\ProfileController;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 Route::get('/', function () {
     return redirect()->route('login');
 });
 
-Route::get('/dashboard', [TransactionController::class, 'authForm'])->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [TablesController::class, 'mainPage'])->middleware(['auth', 'verified'])->name('dashboard');
+Route::put('/table', [TablesController::class, 'newTable'])->middleware(['auth', 'verified']);
+Route::post('/table', [TablesController::class, 'getTableData'])->middleware(['auth', 'verified'])->name('tableData');
+
+
 Route::post('/transactions', [TransactionController::class, 'saveData'])->middleware(['auth', 'verified'])->name('saveData');
 Route::put('/transactions', [TransactionController::class, 'update'])->middleware(['auth', 'verified'])->name('updateData');
 Route::delete('/transactions', [TransactionController::class, 'destroy'])->middleware(['auth', 'verified'])->name('deleteData');

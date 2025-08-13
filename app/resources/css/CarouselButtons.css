@@ -1,0 +1,240 @@
+.carousel-buttons {
+    margin: 10px auto 0;
+    display: flex;
+    width: 100%;
+    max-width: 1400px;
+    height: 100px;
+    align-items: center;
+    position: relative;
+    background: #f5f5f5;
+    border-radius: 8px;
+    padding: 0 10px;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.carousel-container-wrapper {
+    display: flex;
+    align-items: center;
+    width: 80%;
+    position: relative;
+    min-width: 0;
+}
+
+.carousel-container {
+    display: flex;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    width: calc(100% - 160px); /* Учитываем увеличенные margin */
+    margin: 0 80px; /* Увеличенные отступы для стрелок */
+    gap: 10px;
+    padding: 10px 0;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    flex: 1;
+}
+
+.carousel-container::-webkit-scrollbar {
+    display: none;
+}
+
+.carousel-content {
+    display: flex;
+    gap: 10px;
+    padding: 0 10px;
+}
+
+.carousel-item {
+    flex: 0 0 auto;
+    padding: 10px 20px;
+    background: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.3s;
+    box-sizing: border-box;
+}
+
+.carousel-item:hover:not(.active) {
+    background: #e0e0e0;
+}
+
+.carousel-item.active {
+    background: #4CAF50;
+    color: white;
+    cursor: default;
+}
+
+.add-button-container {
+    width: 20%;
+    min-width: 120px;
+    padding-left: 10px;
+    box-sizing: border-box;
+}
+
+.add-button {
+    width: 100%;
+    height: 50px;
+    background: #4470e4;;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    white-space: nowrap;
+}
+
+.scroll-button {
+    position: absolute;
+    z-index: 1;
+    background: #f5f5f5;
+    color: #333;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: bold;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    transition: all 0.3s;
+}
+
+.scroll-button:hover:not(.disabled) {
+    background: #e0e0e0;
+}
+
+.scroll-button.disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.scroll-button.left {
+    left: 10px;
+}
+
+.scroll-button.right {
+    right: 10px;
+}
+
+/* Мобильная версия */
+@media (max-width: 768px) {
+    .carousel-buttons {
+        height: auto;
+        flex-direction: column;
+        padding: 10px;
+    }
+
+    .mobile-menu-toggle {
+        width: 100%;
+        padding: 10px;
+        background: #333;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        margin-bottom: 10px;
+    }
+
+    .mobile-menu {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .carousel-item {
+        width: 100%;
+        text-align: center;
+    }
+
+    .add-button-container {
+        width: 100%;
+        padding-left: 0;
+        margin-top: 10px;
+    }
+
+    .carousel-container-wrapper,
+    .scroll-button {
+        display: none;
+    }
+}
+.add-item-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.add-item-form input {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.form-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.form-buttons button {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.form-buttons button:first-child {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.form-buttons button:last-child {
+    background-color: #f44336;
+    color: white;
+}
+
+.error-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.error-modal-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 5px;
+    max-width: 400px;
+    width: 100%;
+}
+
+.error-modal-content h3 {
+    margin-top: 0;
+    color: #f44336;
+}
+
+.error-modal-content ul {
+    padding-left: 20px;
+    color: #f44336;
+}
+
+.error-modal-content button {
+    margin-top: 15px;
+    padding: 8px 15px;
+    background-color: #f44336;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}

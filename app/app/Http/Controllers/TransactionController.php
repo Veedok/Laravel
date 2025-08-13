@@ -5,54 +5,52 @@ namespace App\Http\Controllers;
 use App\DTO\DestroyDTO;
 use App\DTO\TransactionDTO;
 use App\DTO\UpdateTransactionDTO;
-use Illuminate\Http\Request;
-use Inertia\Inertia;
+use App\Services\Transaction;
+use Illuminate\Http\JsonResponse;
 
+/** Контроллер для работы с транзакциями (записями в таблице) */
 class TransactionController extends Controller
 {
-    public function authForm()
+
+    /**
+     * Определение зависимостей
+     * @param Transaction $transaction
+     */
+    public function __construct(
+        private readonly Transaction  $transaction
+    )
     {
-        $transactions = auth()->user()?->transactions()->orderBy('date', 'desc')->get();
-        return Inertia::render('Dashboard', [
-            'csrfToken' => csrf_token(),
-            'transactions' => $transactions->map(function ($item) {
-                return [
-                    'id' => $item->id,
-                    'title' => $item->name,
-                    'changeBalance' => $item->type === 'income',
-                    'sum' => $item->sum,
-                    'date' => $item->date->format('d.m.Y')
-                ];
-            })
-        ]);
+
     }
 
-    public function saveData(TransactionDTO $request)
+    /**
+     * Сохранение новой записи
+     * @param TransactionDTO $request
+     * @return JsonResponse
+     */
+    public function saveData(TransactionDTO $request): JsonResponse
     {
-        $transaction = $request->requestUser->transactions()->create([
-            "name" => $request->name,
-            "type"=>$request->changeBalance ? 'income' : 'expense',
-            "sum" => $request->sum,
-            "date" => $request->date,
-        ]);
-        return response()->json(['status' => 'ok', 'id' => $transaction->id]);
+        return $this->transaction->save($request);
     }
 
-    public function update(UpdateTransactionDTO $request)
+    /**
+     * Обновление записи
+     * @param UpdateTransactionDTO $request
+     * @return JsonResponse
+     */
+    public function update(UpdateTransactionDTO $request): JsonResponse
     {
-        (isset($request->name)) && $request->transaction->name = $request->name;
-        (isset($request->date)) && $request->transaction->date = $request->date;
-        (isset($request->sum)) && $request->transaction->sum = $request->sum;
-        if (isset($request->changeBalance)){
-            $request->transaction->type = $request->changeBalance ? 'income' : 'expense';
-        }
-        $request->transaction->save();
-        return response()->json(['status' => 'ok']);
+        return $this->transaction->update($request);
     }
 
-    public function destroy(DestroyDTO $request)
+    /**
+     * Удаление записи
+     * @param DestroyDTO $request
+     * @return JsonResponse
+     */
+    public function destroy(DestroyDTO $request): JsonResponse
     {
-        $request->getTransaction()->delete();
-        return response()->json(['status' => 'ok']);
+        return $this->transaction->destroy($request);
     }
+
 }

@@ -15,7 +15,7 @@ abstract class AbstractDTO
 {
     use Checker;
 
-    public const VALIDATE_MESSAGE = [];
+    public const array VALIDATE_MESSAGE = [];
 
     /** @var Validator|null Валидатор используется в web приложении */
     protected ?Validator $validator = null;

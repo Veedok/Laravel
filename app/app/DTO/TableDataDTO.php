@@ -38,7 +38,11 @@ class TableDataDTO extends AbstractDTO
         /** @var User $user */
         $user = auth()->user();
         $user !== null && $result->setRequestUser($user);
-        return $result->validate();
+        $result = $result->validate();
+        if (!$result->hasError()){
+            $request->session()->put('ActiveTable', $result->id);
+        }
+        return $result;
     }
 
     /**
@@ -47,7 +51,7 @@ class TableDataDTO extends AbstractDTO
      */
     protected function selfValidate(): void
     {
-        if (!$this->requestUser->checkPermisions($this->id)){
+        if (!$this->requestUser->checkPermissions($this->id)){
             $this->makeError(Errors::TABLE_NOT_FOUND, 400);
         }
     }

@@ -141,7 +141,7 @@ const CarouselButtons = ({items = {}, onItemClick, onAddItem}) => {
                         className="mobile-menu-toggle"
                         onClick={() => setShowMobileMenu(!showMobileMenu)}
                     >
-                        ☰
+                       Мои таблицы ☰
                     </button>
 
                     {showMobileMenu && (

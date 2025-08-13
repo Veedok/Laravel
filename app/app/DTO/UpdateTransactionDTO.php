@@ -4,15 +4,27 @@ namespace App\DTO;
 
 use App\Enums\Errors;
 use App\Models\Transaction;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
+/** DTO для обновления транзакции */
 class UpdateTransactionDTO extends AbstractDTO
 {
 
+    /** @var Transaction Обновляемая запись */
     public Transaction $transaction;
 
+    /**
+     * Закрытый конструктор
+     * @param int|null $table
+     * @param int|null $id
+     * @param string|null $name
+     * @param bool $changeBalance
+     * @param float|null $sum
+     * @param Carbon|null $date
+     */
     protected function __construct(
         public ?int    $table = null,
         public ?int    $id = null,
@@ -27,6 +39,11 @@ class UpdateTransactionDTO extends AbstractDTO
         }
     }
 
+    /**
+     * Создание класса из запроса
+     * @param Request $request
+     * @return static
+     */
     public static function createFromRequest(Request $request): static
     {
         $data = $request->all();
@@ -42,14 +59,19 @@ class UpdateTransactionDTO extends AbstractDTO
             return static::handleValidationErrors($validator);
         }
         $result = new static($data['tableId'], $data['id'], $data['name'], $data['type'], $data['sum'], new Carbon($data['date']));
+        /** @var User $user */
         $user = auth()->user();
         $user !== null && $result->setRequestUser($user);
         return $result->validate();
     }
 
+    /**
+     * Валидация
+     * @return void
+     */
     protected function selfValidate(): void
     {
-        /** @var null|Transaction $transaction */
+        /** @var Transaction $transaction */
         $transaction = $this->requestUser->tables()->find($this->table)?->transactions()->find($this->id);
         if (!$transaction) {
             $this->makeError(Errors::TRANSACTION_NOT_FOUND, 400);
@@ -61,13 +83,18 @@ class UpdateTransactionDTO extends AbstractDTO
             if (!isset($this->date) && !isset($this->sum) && !isset($this->name) && !isset($this->changeBalance)) {
                 $this->makeError(Errors::NOTING_CHANGE, 400);
             } else {
-                $this->chengeTransaction($transaction);
+                $this->changeTransaction($transaction);
             }
 
         }
     }
 
-    private function chengeTransaction(Transaction $transaction)
+    /**
+     * Установка изменяемой записи
+     * @param Transaction $transaction
+     * @return void
+     */
+    private function changeTransaction(Transaction $transaction): void
     {
         $this->transaction = $transaction;
     }

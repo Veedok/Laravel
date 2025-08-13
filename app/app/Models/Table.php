@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * @property mixed $id
+ * @method static find(int|null $id)
  */
 class Table extends Model
 {

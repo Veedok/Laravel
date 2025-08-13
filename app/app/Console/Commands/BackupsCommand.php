@@ -8,24 +8,23 @@ use RuntimeException;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 
+/** Команда для создания бэкапа БД */
 class BackupsCommand extends Command
 {
     /**
-     * The name and signature of the console command.
-     *
+     * Сигнатура команды
      * @var string
      */
     protected $signature = 'db:backup-send';
 
     /**
-     * The console command description.
-     *
+     * Описание команды
      * @var string
      */
     protected $description = 'Команда создания Бэкапов';
 
     /**
-     * Execute the console command.
+     * Выполнение команды.
      */
     public function handle(): void
     {

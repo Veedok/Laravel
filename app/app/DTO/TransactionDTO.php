@@ -2,13 +2,22 @@
 
 namespace App\DTO;
 
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
+/** DTO для создания записи в таблице */
 class TransactionDTO extends AbstractDTO
 {
-
+    /**
+     * Закрытый конструктор
+     * @param int|null $table
+     * @param string|null $name
+     * @param bool $changeBalance
+     * @param float|null $sum
+     * @param Carbon|null $date
+     */
     protected function __construct(
         public ?int $table = null,
         public ?string $name = null,
@@ -21,6 +30,12 @@ class TransactionDTO extends AbstractDTO
             $this->sum = round($this->sum, 2);
         }
     }
+
+    /**
+     * Создание класса из запроса
+     * @param Request $request
+     * @return static
+     */
     public static function createFromRequest(Request $request): static
     {
         $data = $request->all();
@@ -35,11 +50,16 @@ class TransactionDTO extends AbstractDTO
             return static::handleValidationErrors($validator);
         }
         $result = new static($data['tableId'],$data['name'], $data['type'], $data['sum'], new Carbon($data['date']));
+        /** @var User $user */
         $user = auth()->user();
         $user !== null && $result->setRequestUser($user);
         return $result->validate();
     }
 
+    /**
+     * Валидация
+     * @return void
+     */
     protected function selfValidate(): void
     {
         // TODO: Implement selfValidate() method.

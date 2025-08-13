@@ -7,4 +7,4 @@ use Illuminate\Support\Facades\Schedule;
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
-Schedule::command('db:backup-send veedok18@yandex.ru')->weekly()->runInBackground();
+Schedule::command('db:backup-send')->weeklyOn(1, '12:00')()->runInBackground();

@@ -47,7 +47,7 @@ export default function Dashboard({tables: initialTables}) {
         try {
             setLoading(true);
             setError(null);
-            const response = await axios.post(`/myEndpoint`, {
+            const response = await axios.post(route('tableData'), {
                 tableId: tableId
             });
             setTransactions(response.data);

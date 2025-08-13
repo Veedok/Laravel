@@ -3,50 +3,54 @@
 namespace App\Http\Controllers;
 
 use App\DTO\DestroyDTO;
-use App\DTO\NewTableDTO;
-use App\DTO\TableDataDTO;
 use App\DTO\TransactionDTO;
 use App\DTO\UpdateTransactionDTO;
-use App\Services\TableService;
-use Illuminate\Http\Request;
-use Inertia\Inertia;
+use App\Services\Transaction;
+use Illuminate\Http\JsonResponse;
 
+/** Контроллер для работы с транзакциями (записями в таблице) */
 class TransactionController extends Controller
 {
 
+    /**
+     * Определение зависимостей
+     * @param Transaction $transaction
+     */
     public function __construct(
-        private readonly TableService $tableService
+        private readonly Transaction  $transaction
     )
     {
 
     }
-    public function dashboard()
+
+    /**
+     * Сохранение новой записи
+     * @param TransactionDTO $request
+     * @return JsonResponse
+     */
+    public function saveData(TransactionDTO $request): JsonResponse
     {
-        return $this->tableService->getTable();
+        return $this->transaction->save($request);
     }
 
-    public function saveData(TransactionDTO $request)
+    /**
+     * Обновление записи
+     * @param UpdateTransactionDTO $request
+     * @return JsonResponse
+     */
+    public function update(UpdateTransactionDTO $request): JsonResponse
     {
-        return $this->tableService->save($request);
+        return $this->transaction->update($request);
     }
 
-    public function update(UpdateTransactionDTO $request)
+    /**
+     * Удаление записи
+     * @param DestroyDTO $request
+     * @return JsonResponse
+     */
+    public function destroy(DestroyDTO $request): JsonResponse
     {
-        return $this->tableService->update($request);
+        return $this->transaction->destroy($request);
     }
 
-    public function destroy(DestroyDTO $request)
-    {
-        return $this->tableService->destroy($request);
-    }
-
-    public function getTableData(TableDataDTO $request)
-    {
-        return $this->tableService->getTableData($request);
-    }
-
-    public function newTable(NewTableDTO $request)
-    {
-        return response()->json($this->tableService->newTable($request));
-    }
 }

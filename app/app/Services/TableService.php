@@ -2,18 +2,22 @@
 
 namespace App\Services;
 
-use App\DTO\DestroyDTO;
 use App\DTO\NewTableDTO;
 use App\DTO\TableDataDTO;
-use App\DTO\TransactionDTO;
-use App\DTO\UpdateTransactionDTO;
 use App\Models\Table;
+use Illuminate\Http\JsonResponse;
 use Inertia\Inertia;
+use Inertia\Response;
 
+/** Сервис для работы с таблицами */
 class TableService
 {
 
-    public function getTable()
+    /**
+     * Метод отображения главной страницы
+     * @return Response
+     */
+    public function getMainPage(): Response
     {
         $tables = auth()->user()?->tables
             ->mapWithKeys(function ($table, $index) {
@@ -31,36 +35,12 @@ class TableService
         ]);
     }
 
-    public function save(TransactionDTO $request)
-    {
-        $transaction = $request->requestUser->tables()->find($request->table)?->transactions()->create([
-            "name" => $request->name,
-            "type" => $request->changeBalance ? 'income' : 'expense',
-            "sum" => $request->sum,
-            "date" => $request->date,
-        ]);
-        return response()->json(['status' => 'ok', 'id' => $transaction->id]);
-    }
-
-    public function update(UpdateTransactionDTO $request)
-    {
-        (isset($request->name)) && $request->transaction->name = $request->name;
-        (isset($request->date)) && $request->transaction->date = $request->date;
-        (isset($request->sum)) && $request->transaction->sum = $request->sum;
-        if (isset($request->changeBalance)) {
-            $request->transaction->type = $request->changeBalance ? 'income' : 'expense';
-        }
-        $request->transaction->save();
-        return response()->json(['status' => 'ok']);
-    }
-
-    public function destroy(DestroyDTO $request)
-    {
-        $request->getTransaction()->delete();
-        return response()->json(['status' => 'ok']);
-    }
-
-    public function getTableData(TableDataDTO $request)
+    /**
+     * Получение данных определенной таблицы
+     * @param TableDataDTO $request
+     * @return JsonResponse
+     */
+    public function getTableData(TableDataDTO $request): JsonResponse
     {
         $transactions = Table::find($request->id)->transactions;
         $result = [];
@@ -77,11 +57,13 @@ class TableService
     }
 
     /**
+     * Создание новой таблицы
      * @param NewTableDTO $request
      * @return array
      */
     public function newTable(NewTableDTO $request): array
     {
+        /** @var Table $table */
         $table = $request->requestUser->tables()->create([
             'name' => $request->name
         ], [

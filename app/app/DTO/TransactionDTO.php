@@ -63,7 +63,7 @@ class TransactionDTO extends AbstractDTO
      */
     protected function selfValidate(): void
     {
-        if (!$this->requestUser->checkPermission($this->table)) {
+        if (!$this->requestUser->checkTableAccess($this->table)) {
             $this->makeError(Errors::ACCESS_DENIED, 403);
         }
     }

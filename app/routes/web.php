@@ -12,7 +12,7 @@ Route::get('/', function () {
 Route::get('/dashboard', [TablesController::class, 'mainPage'])->middleware(['auth', 'verified'])->name('dashboard');
 Route::put('/table', [TablesController::class, 'newTable'])->middleware(['auth', 'verified']);
 Route::post('/table', [TablesController::class, 'getTableData'])->middleware(['auth', 'verified'])->name('tableData');
-
+Route::get('/tableControl', [TablesController::class, 'getTablePage'])->middleware(['auth', 'verified'])->name('tableControl');
 
 Route::post('/transactions', [TransactionController::class, 'saveData'])->middleware(['auth', 'verified'])->name('saveData');
 Route::put('/transactions', [TransactionController::class, 'update'])->middleware(['auth', 'verified'])->name('updateData');

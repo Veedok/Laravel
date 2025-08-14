@@ -20,25 +20,15 @@ class TableService
      */
     public function getMainPage(?int $tableId): Response
     {
-        $tables = auth()->user()?->tables
-            ->mapWithKeys(function ($table) use ($tableId) {
-                return [
-                    $table->id => [
-                        'name' => $table->name,
-                        'active' => $table->id === $tableId
-                    ]
-                ];
-            })
-            ->all();
-        $activeResult = array_unique(array_column($tables, 'active'));
-        if (count($activeResult) === 1 && empty(current($activeResult))){
-            $key = key($tables);
-            $tables[$key]['active'] = true;
-        }
-        return Inertia::render('Dashboard', [
-            'csrfToken' => csrf_token(),
-            'tables' => $tables,
-        ]);
+        $callback = static function ($table) use ($tableId) {
+            return [
+                $table->id => [
+                    'name' => $table->name,
+                    'active' => $table->id === $tableId
+                ]
+            ];
+        };
+        return $this->makePage($callback, "Dashboard", true);
     }
 
     /**
@@ -76,5 +66,29 @@ class TableService
             'role_id' => 1
         ]);
         return ['id' => $table->id];
+    }
+
+    public function getTableControl()
+    {
+        $callback = static function ($table) {
+            return [$table->id => $table->name];
+        };
+        return $this->makePage($callback, "TableControl");
+    }
+
+    private function makePage($function, $page, $updateData = false)
+    {
+        $tables = auth()->user()?->tables->mapWithKeys($function)->all();
+        if ($updateData){
+            $activeResult = array_unique(array_column($tables, 'active'));
+            if (count($activeResult) === 1 && empty(current($activeResult))) {
+                $key = key($tables);
+                $tables[$key]['active'] = true;
+            }
+        }
+        return Inertia::render($page, [
+            'csrfToken' => csrf_token(),
+            'tables' => $tables,
+        ]);
     }
 }

@@ -1,6 +1,7 @@
 import React, {useState} from 'react';
 import {router} from '@inertiajs/react';
 import '../../css/payTable.css';
+import axios from 'axios';
 
 
 const TransactionsTable = ({data, activeTableId}) => {
@@ -25,6 +26,73 @@ const TransactionsTable = ({data, activeTableId}) => {
         setTimeout(() => setSuccessMessage(null), 3000);
     };
 
+    // const handleSubmit = async (e) => {
+    //     e.preventDefault();
+    //     setErrorMessage(null);
+    //
+    //     const payload = {
+    //         id: editingId,
+    //         name: formData.title,
+    //         type: formData.changeBalance,
+    //         sum: parseFloat(formData.sum),
+    //         date: formData.date,
+    //         tableId:activeTableId
+    //     };
+    //
+    //     try {
+    //         const url = editingId ? route('updateData') : route('saveData');
+    //         const method = editingId ? 'PUT' : 'POST';
+    //
+    //         const response = await fetch(url, {
+    //             method,
+    //             headers: {
+    //                 'Content-Type': 'application/json',
+    //                 'Accept': 'application/json',
+    //                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+    //             },
+    //             body: JSON.stringify(payload)
+    //         });
+    //
+    //         if (!response.ok) {
+    //             const errorData = await response.json();
+    //
+    //             // Если ошибка приходит в виде массива
+    //             if (Array.isArray(errorData.errors)) {
+    //                 throw new Error(errorData.errors.join('\n'));
+    //             }
+    //             // Если ошибка приходит в виде объекта
+    //             else if (typeof errorData.errors === 'object') {
+    //                 const errors = Object.values(errorData.errors).flat();
+    //                 throw new Error(errors.join('\n'));
+    //             }
+    //             // Если ошибка приходит строкой
+    //             else {
+    //                 throw new Error(errorData.errors || 'Ошибка сервера');
+    //             }
+    //         }
+    //
+    //         const data = await response.json();
+    //
+    //         const newTransaction = {
+    //             id: data.id,
+    //             title: formData.title,
+    //             changeBalance: formData.changeBalance,
+    //             sum: parseFloat(formData.sum),
+    //             date: new Date(formData.date).toLocaleDateString('ru-RU')
+    //         };
+    //
+    //         setTransactions(prev =>
+    //             editingId
+    //                 ? prev.map(t => t.id === editingId ? newTransaction : t)
+    //                 : [...prev, newTransaction]
+    //         );
+    //
+    //         showSuccess(editingId ? 'Запись успешно обновлена' : 'Запись успешно добавлена');
+    //         resetForm();
+    //     } catch (error) {
+    //         setErrorMessage(error.message || 'Произошла ошибка');
+    //     }
+    // };
     const handleSubmit = async (e) => {
         e.preventDefault();
         setErrorMessage(null);
@@ -35,45 +103,17 @@ const TransactionsTable = ({data, activeTableId}) => {
             type: formData.changeBalance,
             sum: parseFloat(formData.sum),
             date: formData.date,
-            tableId:activeTableId
+            tableId: activeTableId
         };
 
         try {
             const url = editingId ? route('updateData') : route('saveData');
-            const method = editingId ? 'PUT' : 'POST';
+            const method = editingId ? 'put' : 'post';
 
-            const response = await fetch(url, {
-                method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-
-                // Если ошибка приходит в виде массива
-                if (Array.isArray(errorData.errors)) {
-                    throw new Error(errorData.errors.join('\n'));
-                }
-                // Если ошибка приходит в виде объекта
-                else if (typeof errorData.errors === 'object') {
-                    const errors = Object.values(errorData.errors).flat();
-                    throw new Error(errors.join('\n'));
-                }
-                // Если ошибка приходит строкой
-                else {
-                    throw new Error(errorData.errors || 'Ошибка сервера');
-                }
-            }
-
-            const data = await response.json();
+            const response = await axios[method](url, payload);
 
             const newTransaction = {
-                id: data.id,
+                id: response.data.id,
                 title: formData.title,
                 changeBalance: formData.changeBalance,
                 sum: parseFloat(formData.sum),
@@ -89,10 +129,21 @@ const TransactionsTable = ({data, activeTableId}) => {
             showSuccess(editingId ? 'Запись успешно обновлена' : 'Запись успешно добавлена');
             resetForm();
         } catch (error) {
-            setErrorMessage(error.message || 'Произошла ошибка');
+            if (error.response) {
+                // Ошибка от сервера (4xx/5xx)
+                const errorData = error.response.data;
+                setErrorMessage(
+                    errorData.message ||
+                    Object.values(errorData.errors || {}).flat().join('\n') ||
+                    'Ошибка сервера'
+                );
+            } else {
+                // Ошибка сети или другая проблема
+                setErrorMessage('Не удалось выполнить запрос. Проверьте соединение.');
+            }
+            console.error('Submission error:', error);
         }
     };
-
     const handleEdit = (transaction) => {
         setEditingId(transaction.id);
         setFormData({
@@ -110,28 +161,47 @@ const TransactionsTable = ({data, activeTableId}) => {
         setDeleteModalOpen(true);
     };
     const handleConfirmDelete = async () => {
-        if (!itemToDelete) return;
+        // Дополнительная проверка на случай, если modal был закрыт до завершения операции
+        if (!itemToDelete || deleteModalOpen === false) {
+            setItemToDelete(null);
+            return;
+        }
 
         try {
-            const response = await fetch(route('deleteData'), {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                },
-                body: JSON.stringify({id: itemToDelete})
+            // Фиксируем ID для удаления на момент начала операции
+            const deletingId = itemToDelete;
+
+            const response = await axios.delete(route('deleteData'), {
+                data: { id: deletingId }
             });
 
-            if (!response.ok) {
-                throw new Error('Ошибка при удалении');
-            }
+            // Дополнительная проверка, что удаляемый элемент еще актуален
+            setTransactions(prev => {
+                if (!prev.some(t => t.id === deletingId)) {
+                    console.warn('Элемент уже был удален');
+                    return prev;
+                }
+                return prev.filter(t => t.id !== deletingId);
+            });
 
-            setTransactions(prev => prev.filter(t => t.id !== itemToDelete));
             showSuccess('Запись успешно удалена');
         } catch (error) {
-            setErrorMessage(error.message || 'Ошибка при удалении');
+            if (error.response) {
+                setErrorMessage(
+                    error.response.data.message ||
+                    `Ошибка при удалении (код: ${error.response.status})`
+                );
+
+                // Если это ошибка 404 (уже удален) - просто закрываем модальное окно
+                if (error.response.status === 404) {
+                    showSuccess('Запись уже была удалена');
+                }
+            } else {
+                setErrorMessage('Не удалось выполнить удаление. Проверьте соединение.');
+            }
+            console.error('Delete error:', error);
         } finally {
+            // Всегда сбрасываем состояние, даже если были ошибки
             setDeleteModalOpen(false);
             setItemToDelete(null);
         }

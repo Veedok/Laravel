@@ -7,6 +7,7 @@ use App\DTO\TableDataDTO;
 use App\Services\TableService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 use Inertia\Response;
 
 /** Контроллер для работы с таблицами */
@@ -51,5 +52,10 @@ readonly class TablesController
     public function newTable(NewTableDTO $request): JsonResponse
     {
         return response()->json($this->tableService->newTable($request));
+    }
+
+    public function getTablePage()
+    {
+        return $this->tableService->getTableControl();
     }
 }

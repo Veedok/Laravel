@@ -13,6 +13,11 @@ Route::get('/dashboard', [TablesController::class, 'mainPage'])->middleware(['au
 Route::put('/table', [TablesController::class, 'newTable'])->middleware(['auth', 'verified']);
 Route::post('/table', [TablesController::class, 'getTableData'])->middleware(['auth', 'verified'])->name('tableData');
 Route::get('/tableControl', [TablesController::class, 'getTablePage'])->middleware(['auth', 'verified'])->name('tableControl');
+Route::patch('/tableControl', [TablesController::class, 'editTable'])->middleware(['auth', 'verified'])->name('tableEdit');
+Route::delete('/tableControl', [TablesController::class, 'remove'])->middleware(['auth', 'verified'])->name('tableDelete');
+Route::get('/searchUser', [TablesController::class, 'userSearch'])->middleware(['auth', 'verified'])->name('userSearch');
+Route::post('/tableControl', [TablesController::class, 'share'])->middleware(['auth', 'verified'])->name('tableShare');
+
 
 Route::post('/transactions', [TransactionController::class, 'saveData'])->middleware(['auth', 'verified'])->name('saveData');
 Route::put('/transactions', [TransactionController::class, 'update'])->middleware(['auth', 'verified'])->name('updateData');

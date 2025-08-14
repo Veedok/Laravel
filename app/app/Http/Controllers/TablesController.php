@@ -2,8 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\DTO\DestroyDTO;
 use App\DTO\NewTableDTO;
+use App\DTO\Table\AddUserDTO;
+use App\DTO\Table\RemoveDTO;
+use App\DTO\Table\UpdateDTO;
 use App\DTO\TableDataDTO;
+use App\Models\User;
 use App\Services\TableService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -57,5 +62,25 @@ readonly class TablesController
     public function getTablePage()
     {
         return $this->tableService->getTableControl();
+    }
+
+    public function editTable(UpdateDTO $request)
+    {
+        return $this->tableService->edit($request);
+    }
+
+    public function remove(RemoveDTO $request)
+    {
+        return $this->tableService->remove($request);
+    }
+
+    public function userSearch(Request $request)
+    {
+        return $this->tableService->searchUsers($request);
+    }
+
+    public function share(AddUserDTO $request)
+    {
+        return $this->tableService->share($request);
     }
 }

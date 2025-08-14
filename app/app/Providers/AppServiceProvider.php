@@ -5,6 +5,9 @@ namespace App\Providers;
 use App\DTO\AbstractDTO;
 use App\DTO\DestroyDTO;
 use App\DTO\NewTableDTO;
+use App\DTO\Table\AddUserDTO;
+use App\DTO\Table\RemoveDTO;
+use App\DTO\Table\UpdateDTO;
 use App\DTO\TableDataDTO;
 use App\DTO\TransactionDTO;
 use App\DTO\UpdateTransactionDTO;
@@ -21,7 +24,10 @@ class AppServiceProvider extends ServiceProvider
         UpdateTransactionDTO::class,
         DestroyDTO::class,
         TableDataDTO::class,
-        NewTableDTO::class
+        NewTableDTO::class,
+        UpdateDTO::class,
+        RemoveDTO::class,
+        AddUserDTO::class
     ];
     /**
      * Register any application services.

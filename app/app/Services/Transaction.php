@@ -40,7 +40,7 @@ class Transaction
             $request->transaction->type = $request->changeBalance ? 'income' : 'expense';
         }
         $request->transaction->save();
-        return response()->json(['status' => 'ok']);
+        return response()->json(['status' => 'ok', 'id' => $request->transaction->id]);
     }
 
     /**

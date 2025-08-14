@@ -60,7 +60,7 @@ class User extends Authenticatable
      * @param $id
      * @return bool
      */
-    public function checkPermissions($id): bool
+    public function checkTableAccess($id): bool
     {
         return $this->tables()->where('tables.id', $id)->exists();
     }

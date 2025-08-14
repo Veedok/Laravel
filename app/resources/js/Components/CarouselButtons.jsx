@@ -1,6 +1,7 @@
 import React, {useState, useEffect, useRef} from 'react';
 import axios from 'axios';
 import '../../css/CarouselButtons.css';
+import { Inertia } from '@inertiajs/inertia';
 
 const CarouselButtons = ({items = {}, onItemClick, onAddItem}) => {
     const [isMobile, setIsMobile] = useState(false);
@@ -133,6 +134,10 @@ const CarouselButtons = ({items = {}, onItemClick, onAddItem}) => {
         setErrors([]);
     };
 
+    const handleManageTables = () => {
+        Inertia.visit('/tableControl');
+    };
+
     return (
         <div className={`carousel-buttons ${isMobile ? 'mobile' : ''}`}>
             {isMobile ? (
@@ -141,7 +146,7 @@ const CarouselButtons = ({items = {}, onItemClick, onAddItem}) => {
                         className="mobile-menu-toggle"
                         onClick={() => setShowMobileMenu(!showMobileMenu)}
                     >
-                       Мои таблицы ☰
+                        Мои таблицы ☰
                     </button>
 
                     {showMobileMenu && (
@@ -176,6 +181,14 @@ const CarouselButtons = ({items = {}, onItemClick, onAddItem}) => {
                                     Добавить
                                 </button>
                             )}
+
+                            {/* Добавленная кнопка для управления таблицами */}
+                            <button
+                                className="manage-tables-button"
+                                onClick={handleManageTables}
+                            >
+                                Управление таблицами
+                            </button>
                         </div>
                     )}
                 </>

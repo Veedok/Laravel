@@ -30,6 +30,12 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Мои таблицы
                                 </NavLink>
+                                <NavLink
+                                    href={route('tableControl')}
+                                    active={route().current('tableControl')}
+                                >
+                                    Управление таблицами
+                                </NavLink>
                             </div>
                         </div>
 
@@ -65,11 +71,6 @@ export default function AuthenticatedLayout({ header, children }) {
                                             href={route('profile.edit')}
                                         >
                                             Profile
-                                        </Dropdown.Link>
-                                        <Dropdown.Link
-                                            href={route('profile.edit')}
-                                        >
-                                            Veedok
                                         </Dropdown.Link>
                                         <Dropdown.Link
                                             href='/logout'

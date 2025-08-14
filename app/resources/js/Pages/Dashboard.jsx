@@ -31,17 +31,47 @@ const ErrorMessage = ({message, onRetry}) => (
     </div>
 );
 
+const NoTablesMessage = ({onAddTable}) => (
+    <div className="max-w-md mx-auto p-6 bg-blue-50 rounded-lg shadow-sm">
+        <div className="flex flex-col items-center space-y-4">
+            <div className="flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full">
+                <svg className="w-10 h-10 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+            </div>
+            <p className="text-blue-600 font-medium text-center">У вас нет ни одной таблицы. Создайте таблицу для начала работы.</p>
+            <button
+                onClick={() => onAddTable("Новая таблица")}
+                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+                Создать таблицу
+            </button>
+        </div>
+    </div>
+);
+
 export default function Dashboard({tables: initialTables}) {
     const [transactions, setTransactions] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [tables, setTables] = useState(initialTables);
     const [activeTableId, setActiveTableId] = useState(null);
 
+    const hasTables = Object.keys(tables).length > 0;
+
     useEffect(() => {
-        const initialActiveId = Object.keys(tables).find(key => tables[key].active === true);
-        setActiveTableId(initialActiveId);
-    }, [tables]);
+        if (hasTables) {
+            const initialActiveId = Object.keys(tables).find(key => tables[key].active === true);
+            setActiveTableId(initialActiveId || Object.keys(tables)[0]);
+        }
+    }, []);
+
+    useEffect(() => {
+        // Загружаем данные только если таблица активна
+        if (activeTableId && tables[activeTableId]?.active) {
+            fetchTransactions(activeTableId);
+        }
+    }, [activeTableId, tables]);
 
     const fetchTransactions = async (tableId) => {
         try {
@@ -51,18 +81,6 @@ export default function Dashboard({tables: initialTables}) {
                 tableId: tableId
             });
             setTransactions(response.data);
-
-            // Обновляем активное состояние таблиц
-            setTables(prev => {
-                const updated = {};
-                Object.keys(prev).forEach(key => {
-                    updated[key] = {
-                        ...prev[key],
-                        active: key === tableId
-                    };
-                });
-                return updated;
-            });
         } catch (err) {
             setError('Не удалось загрузить данные. Пожалуйста, попробуйте позже.');
             console.error(err);
@@ -71,13 +89,19 @@ export default function Dashboard({tables: initialTables}) {
         }
     };
 
-    useEffect(() => {
-        if (activeTableId) {
-            fetchTransactions(activeTableId);
-        }
-    }, [activeTableId]);
-
     const handleItemClick = (id) => {
+        // Сначала обновляем состояние таблиц
+        setTables(prev => {
+            const updated = {};
+            Object.keys(prev).forEach(key => {
+                updated[key] = {
+                    ...prev[key],
+                    active: key === id
+                };
+            });
+            return updated;
+        });
+        // Затем устанавливаем активную таблицу
         setActiveTableId(id);
     };
 
@@ -89,23 +113,40 @@ export default function Dashboard({tables: initialTables}) {
 
     const handleAddItem = async (name) => {
         try {
+            setLoading(true);
             const response = await axios.put(`/table`, {
                 name: name
             });
 
             if (response.status === 200) {
-                setTables(prev => ({
-                    ...prev,
-                    [response.data.id]: {
-                        name: name,
-                        active: false
-                    }
-                }));
+                const newTableId = response.data.id;
+
+                // Сначала делаем все существующие таблицы неактивными
+                const updatedTables = Object.keys(tables).reduce((acc, key) => {
+                    acc[key] = {...tables[key], active: false};
+                    return acc;
+                }, {});
+
+                // Добавляем новую таблицу как активную
+                updatedTables[newTableId] = {
+                    name: name,
+                    active: true
+                };
+
+                // Атомарно обновляем оба состояния
+                setTables(updatedTables);
+                setActiveTableId(newTableId);
+
+                // Загружаем данные
+                await fetchTransactions(newTableId);
                 return true;
             }
         } catch (error) {
             console.error('Error adding item:', error);
+            setError('Не удалось создать таблицу');
             return false;
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -124,12 +165,14 @@ export default function Dashboard({tables: initialTables}) {
                 onAddItem={handleAddItem}
             />
 
-            {loading ? (
+            {!hasTables ? (
+                <NoTablesMessage onAddTable={handleAddItem} />
+            ) : loading ? (
                 <LoadingSpinner />
             ) : error ? (
                 <ErrorMessage message={error} onRetry={handleRetry} />
             ) : (
-                <PayTable data={transactions} activeTableId={activeTableId}  />
+                <PayTable data={transactions} activeTableId={activeTableId} />
             )}
         </AuthenticatedLayout>
     );

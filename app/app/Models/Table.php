@@ -26,7 +26,8 @@ class Table extends Model
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'user_tables')
-            ->withPivot('role_id');
+            ->using(UserTable::class)
+            ->withPivot(['permissions', 'is_owner']);
     }
 
     /**
@@ -36,5 +37,18 @@ class Table extends Model
     public function transactions(): HasMany
     {
         return $this->hasMany(Transaction::class);
+    }
+
+    public function getUserPermissions($userId)
+    {
+
+        /** @var User $user */
+        $user = $this->users()
+            ->where('user_id', $userId)
+            ->first();
+        return [
+            'is_owner' => $user->pivot->is_owner,
+            'permissions' => !$user->pivot->is_owner ? json_decode($user->pivot->permissions, true) : []
+        ];
     }
 }

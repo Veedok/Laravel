@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\DTO\DestroyDTO;
 use App\DTO\NewTableDTO;
 use App\DTO\Table\AddUserDTO;
-use App\DTO\Table\RemoveDTO;
+use App\DTO\Table\GetAndRemoveDTO;
 use App\DTO\Table\UpdateDTO;
 use App\DTO\TableDataDTO;
 use App\Models\User;
@@ -69,7 +69,7 @@ readonly class TablesController
         return $this->tableService->edit($request);
     }
 
-    public function remove(RemoveDTO $request)
+    public function remove(GetAndRemoveDTO $request)
     {
         return $this->tableService->remove($request);
     }

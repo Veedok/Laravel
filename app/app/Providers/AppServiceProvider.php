@@ -6,7 +6,9 @@ use App\DTO\AbstractDTO;
 use App\DTO\DestroyDTO;
 use App\DTO\NewTableDTO;
 use App\DTO\Table\AddUserDTO;
-use App\DTO\Table\RemoveDTO;
+use App\DTO\Table\ChangePermissionDTO;
+use App\DTO\Table\DelUserDTO;
+use App\DTO\Table\GetAndRemoveDTO;
 use App\DTO\Table\UpdateDTO;
 use App\DTO\TableDataDTO;
 use App\DTO\TransactionDTO;
@@ -26,8 +28,10 @@ class AppServiceProvider extends ServiceProvider
         TableDataDTO::class,
         NewTableDTO::class,
         UpdateDTO::class,
-        RemoveDTO::class,
-        AddUserDTO::class
+        GetAndRemoveDTO::class,
+        AddUserDTO::class,
+        ChangePermissionDTO::class,
+        DelUserDTO::class
     ];
     /**
      * Register any application services.

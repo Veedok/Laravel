@@ -38,4 +38,17 @@ class Table extends Model
     {
         return $this->hasMany(Transaction::class);
     }
+
+    public function getUserPermissions($userId)
+    {
+
+        /** @var User $user */
+        $user = $this->users()
+            ->where('user_id', $userId)
+            ->first();
+        return [
+            'is_owner' => $user->pivot->is_owner,
+            'permissions' => !$user->pivot->is_owner ? json_decode($user->pivot->permissions, true) : []
+        ];
+    }
 }

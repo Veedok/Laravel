@@ -53,7 +53,7 @@ class DestroyDTO extends AbstractDTO
     protected function selfValidate(): void
     {
         $transaction = Transaction::find($this->id);
-        if (!$this->requestUser->checkPermission($this->id)){
+        if (!$this->requestUser->checkTablePermission($this->id, 'removeTable')){
             $this->makeError(Errors::ACCESS_DENIED, 403);
         }
         if (!empty($transaction)) {

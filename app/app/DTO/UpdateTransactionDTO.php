@@ -71,10 +71,13 @@ class UpdateTransactionDTO extends AbstractDTO
      */
     protected function selfValidate(): void
     {
+        $table = $this->requestUser->tables()->find($this->table);
         /** @var Transaction $transaction */
-        $transaction = $this->requestUser->tables()->find($this->table)?->transactions()->find($this->id);
+        $transaction = $table?->transactions()->find($this->id);
         if (!$transaction) {
             $this->makeError(Errors::TRANSACTION_NOT_FOUND, 400);
+        } elseif (!$this->requestUser->checkTablePermission($this->table, 'editTransactions')) {
+            $this->makeError(Errors::ACCESS_DENIED, 400);
         } else {
             (!empty($this->sum) && $this->sum === $transaction->sum) && $this->sum = null;
             (!empty($this->name) && $this->name === $transaction->name) && $this->name = null;

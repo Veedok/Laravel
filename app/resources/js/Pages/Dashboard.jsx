@@ -51,7 +51,13 @@ const NoTablesMessage = ({onAddTable}) => (
 );
 
 export default function Dashboard({tables: initialTables}) {
-    const [transactions, setTransactions] = useState([]);
+    const [data, setData] = useState({
+        transactions: [],
+        permission: {
+            is_owner: false,
+            permissions: []
+        }
+    });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [tables, setTables] = useState(initialTables);
@@ -80,7 +86,7 @@ export default function Dashboard({tables: initialTables}) {
             const response = await axios.post(route('tableData'), {
                 tableId: tableId
             });
-            setTransactions(response.data);
+            setData(response.data); // Теперь сохраняем всю структуру ответа
         } catch (err) {
             setError('Не удалось загрузить данные. Пожалуйста, попробуйте позже.');
             console.error(err);
@@ -172,7 +178,11 @@ export default function Dashboard({tables: initialTables}) {
             ) : error ? (
                 <ErrorMessage message={error} onRetry={handleRetry} />
             ) : (
-                <PayTable data={transactions} activeTableId={activeTableId} />
+                <PayTable
+                    data={data.transactions}
+                    activeTableId={activeTableId}
+                    permissions={data.permission} // Передаем права в таблицу
+                />
             )}
         </AuthenticatedLayout>
     );

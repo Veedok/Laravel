@@ -32,7 +32,6 @@ class Permissions
                 $permissions[] = $request->permission;
             }
         } else {
-            $permissions1 = array_diff($permissions, [$request->permission]);
             $permissions = array_values(array_diff($permissions, [$request->permission]));
 
         }

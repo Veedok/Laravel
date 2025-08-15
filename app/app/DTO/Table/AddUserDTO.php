@@ -4,6 +4,7 @@ namespace App\DTO\Table;
 
 use App\DTO\AbstractDTO;
 use App\Enums\Errors;
+use App\Enums\Permissions;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -18,8 +19,9 @@ class AddUserDTO extends AbstractDTO
      * @param int|null $id
      */
     protected function __construct(
-        public ?int $user = null,
-        public ?int $table = null,
+        public ?int  $user = null,
+        public ?int  $table = null,
+        public array $permissions = []
     )
     {
     }
@@ -34,12 +36,18 @@ class AddUserDTO extends AbstractDTO
         $data = $request->all();
         $validator = Validator::make($data, [
             'userId' => 'required|integer|exists:users,id',
-            'tableId' => 'required|integer|exists:tables,id'
+            'tableId' => 'required|integer|exists:tables,id',
+            'permissions' => 'required|array',
+            'permissions.*' => [
+                'required',
+                'string',
+                'in:' . implode(',', Permissions::getValues()),
+            ],
         ]);
         if ($validator->fails()) {
             return static::handleValidationErrors($validator);
         }
-        $result = new static($data['userId'], $data['tableId']);
+        $result = new static($data['userId'], $data['tableId'], $data['permissions']);
         /** @var User $user */
         $user = auth()->user();
         $user !== null && $result->setRequestUser($user);
@@ -52,7 +60,7 @@ class AddUserDTO extends AbstractDTO
      */
     protected function selfValidate(): void
     {
-        if (!$this->requestUser->checkTableAccess($this->table)) {
+        if (!$this->requestUser->checkTablePermission($this->table, 'invite')) {
             $this->makeError(Errors::ACCESS_DENIED, 403);
         }
     }

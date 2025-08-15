@@ -52,7 +52,9 @@ class User extends Authenticatable
      */
     public function tables(): BelongsToMany
     {
-        return $this->belongsToMany(Table::class, 'user_tables')->withPivot('role_id');
+        return $this->belongsToMany(Table::class, 'user_tables')
+            ->using(UserTable::class)
+            ->withPivot(['permissions', 'is_owner']);
     }
 
     /**
@@ -77,5 +79,10 @@ class User extends Authenticatable
                 $query->where('id', $id);
             })
             ->exists();
+    }
+
+    public function checkTablePermission($id, $permission)
+    {
+        return $this->tables()->find($id)?->pivot->hasPermission($permission);
     }
 }

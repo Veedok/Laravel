@@ -5,8 +5,10 @@ import { Fragment } from 'react';
 import { XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.jsx";
 import '../../css/TableControll.css';
+import TableUserManager from '../Components/TableUserManager';
 
-export default function TableManager({ tables }) {
+export default function TableManager({ tables, permissions }) {
+    const [selectedPermissions, setSelectedPermissions] = useState([]);
     const [emailSuggestions, setEmailSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [isSharing, setIsSharing] = useState(false);
@@ -32,7 +34,7 @@ export default function TableManager({ tables }) {
     const fetchEmailSuggestions = async (query) => {
         try {
             const response = await axios.get(route('userSearch'), {
-                params: { query, limit: 5 } // Ограничиваем 5 результатами
+                params: { query, limit: 5,  tableId: currentTable.id}
             });
             setEmailSuggestions(response.data);
             setShowSuggestions(true);
@@ -150,7 +152,8 @@ export default function TableManager({ tables }) {
         try {
             const response = await axios.post(route('tableShare'), {
                 userId: selectedUser.id,  // ID пользователя
-                tableId: currentTable.id  // ID таблицы
+                tableId: currentTable.id,  // ID таблицы
+                permissions: selectedPermissions // Выбранные разрешения
             }, {
                 headers: {
                     'Content-Type': 'application/json',
@@ -162,6 +165,7 @@ export default function TableManager({ tables }) {
             setShareModalOpen(false);
             setEmail('');
             setEmailSuggestions([]);
+            setSelectedPermissions([]);
         } catch (error) {
             if (error.response) {
                 showError(error.response.data.message ||
@@ -230,8 +234,8 @@ export default function TableManager({ tables }) {
 
                 <div className="divide-y divide-gray-200">
                     {localTables.map(table => (
-                        <div key={table.id}
-                             className="px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div key={table.id} className="px-6 py-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                             {editingId === table.id ? (
                                 <div className="flex flex-col flex-grow">
                                     <div
@@ -296,6 +300,11 @@ export default function TableManager({ tables }) {
                                     </div>
                                 </>
                             )}
+                            </div>
+                            <TableUserManager
+                                tableId={table.id}
+                                permissions={permissions}
+                            />
                         </div>
                     ))}
                 </div>
@@ -338,6 +347,33 @@ export default function TableManager({ tables }) {
                                 </div>
                             )}
                         </div>
+
+                        {/* Добавляем блок с чекбоксами */}
+                        <div className="mt-4">
+                            <h4 className="text-sm font-medium text-gray-700 mb-2">Разрешения:</h4>
+                            <div className="space-y-2">
+                                {Object.entries(permissions).map(([key, label]) => (
+                                    <div key={key} className="flex items-center">
+                                        <input
+                                            id={`permission-${key}`}
+                                            type="checkbox"
+                                            checked={selectedPermissions.includes(key)}
+                                            onChange={(e) => {
+                                                if (e.target.checked) {
+                                                    setSelectedPermissions([...selectedPermissions, key]);
+                                                } else {
+                                                    setSelectedPermissions(selectedPermissions.filter(p => p !== key));
+                                                }
+                                            }}
+                                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                        />
+                                        <label htmlFor={`permission-${key}`} className="ml-2 text-sm text-gray-700">
+                                            {label}
+                                        </label>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                     <div className="mt-4 flex justify-end space-x-3">
                         <button
@@ -346,6 +382,7 @@ export default function TableManager({ tables }) {
                                 setShareModalOpen(false);
                                 setEmail('');
                                 setEmailSuggestions([]);
+                                setSelectedPermissions([]);
                             }}
                             className="px-4 py-2 bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200"
                         >
@@ -364,7 +401,6 @@ export default function TableManager({ tables }) {
                     </div>
                 </div>
             </Modal>
-
             {/* Модальное окно удаления */}
             <Modal isOpen={deleteModalOpen} onClose={() => setDeleteModalOpen(false)}>
                 <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900">

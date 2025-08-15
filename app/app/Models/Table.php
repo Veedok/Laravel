@@ -26,7 +26,8 @@ class Table extends Model
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'user_tables')
-            ->withPivot('role_id');
+            ->using(UserTable::class)
+            ->withPivot(['permissions', 'is_owner']);
     }
 
     /**

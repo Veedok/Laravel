@@ -4,7 +4,7 @@ import '../../css/payTable.css';
 import axios from 'axios';
 
 
-const TransactionsTable = ({data, activeTableId}) => {
+const TransactionsTable = ({ data, activeTableId, permissions }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [errorMessage, setErrorMessage] = useState(null);
@@ -182,7 +182,6 @@ const TransactionsTable = ({data, activeTableId}) => {
                     {successMessage}
                 </div>
             )}
-            {/* Блок с суммами и кнопкой добавления */}
             <div className="overflow-x-auto">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 min-w-full" style={{minWidth: 'fit-content'}}>
                     <div className="bg-green-50 p-4 rounded-lg border border-green-100">
@@ -262,20 +261,24 @@ const TransactionsTable = ({data, activeTableId}) => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 <div className="flex space-x-2 action_row">
-                                    <button
-                                        onClick={() => handleEdit(item)}
-                                        className="text-indigo-600 hover:text-indigo-900"
-                                        title="Редактировать"
-                                    >
-                                        ✏️
-                                    </button>
-                                    <button
-                                        onClick={() => handleDeleteClick(item.id)}
-                                        className="text-red-600 hover:text-red-900"
-                                        title="Удалить"
-                                    >
-                                        🗑️
-                                    </button>
+                                    {(permissions.is_owner || permissions.permissions.includes('editTransactions')) && (
+                                        <button
+                                            onClick={() => handleEdit(item)}
+                                            className="text-indigo-600 hover:text-indigo-900"
+                                            title="Редактировать"
+                                        >
+                                            ✏️
+                                        </button>
+                                    )}
+                                    {(permissions.is_owner || permissions.permissions.includes('deleteTransactions')) && (
+                                        <button
+                                            onClick={() => handleDeleteClick(item.id)}
+                                            className="text-red-600 hover:text-red-900"
+                                            title="Удалить"
+                                        >
+                                            🗑️
+                                        </button>
+                                    )}
                                 </div>
                             </td>
                         </tr>
@@ -283,14 +286,16 @@ const TransactionsTable = ({data, activeTableId}) => {
                     </tbody>
                 </table>
             </div>
-            <div className="flex justify-end">
-                <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                >
-                    Добавить запись
-                </button>
-            </div>
+            {(permissions.is_owner || permissions.permissions.includes('addTransaction')) && (
+                <div className="flex justify-end">
+                    <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                        Добавить запись
+                    </button>
+                </div>
+            )}
             {/* Модальное окно */}
             {deleteModalOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">

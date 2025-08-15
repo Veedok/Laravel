@@ -8,7 +8,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-/** Модель пользователя */
+/** Модель пользователя
+ * @property mixed $pivot
+ */
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -52,7 +54,9 @@ class User extends Authenticatable
      */
     public function tables(): BelongsToMany
     {
-        return $this->belongsToMany(Table::class, 'user_tables')->withPivot('role_id');
+        return $this->belongsToMany(Table::class, 'user_tables')
+            ->using(UserTable::class)
+            ->withPivot(['permissions', 'is_owner']);
     }
 
     /**
@@ -77,5 +81,10 @@ class User extends Authenticatable
                 $query->where('id', $id);
             })
             ->exists();
+    }
+
+    public function checkTablePermission($id, $permission)
+    {
+        return $this->tables()->find($id)?->pivot->hasPermission($permission);
     }
 }

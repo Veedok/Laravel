@@ -56,7 +56,7 @@ class UpdateDTO extends AbstractDTO
      */
     protected function selfValidate(): void
     {
-        if (!$this->requestUser->checkTableAccess($this->id)){
+        if (!$this->requestUser->checkTablePermission($this->id, 'editTables')){
             $this->makeError(Errors::ACCESS_DENIED, 400);
         }
     }

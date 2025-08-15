@@ -4,9 +4,10 @@ namespace App\Services;
 
 use App\DTO\NewTableDTO;
 use App\DTO\Table\AddUserDTO;
-use App\DTO\Table\RemoveDTO;
+use App\DTO\Table\GetAndRemoveDTO;
 use App\DTO\Table\UpdateDTO;
 use App\DTO\TableDataDTO;
+use App\Enums\Permissions;
 use App\Models\Table;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -43,10 +44,13 @@ class TableService
      */
     public function getTableData(TableDataDTO $request): JsonResponse
     {
-        $transactions = Table::find($request->id)->transactions;
-        $result = [];
-        foreach ($transactions as $item) {
-            $result[] = [
+        $table = Table::find($request->id);
+        $result = [
+            'permission' => $table->getUserPermissions($request->requestUser->id),
+            'transactions' => []
+        ];
+        foreach ($table->transactions as $item) {
+            $result['transactions'][] = [
                 'id' => $item->id,
                 'title' => $item->name,
                 'changeBalance' => $item->type === 'income',
@@ -68,17 +72,27 @@ class TableService
         $table = $request->requestUser->tables()->create([
             'name' => $request->name
         ], [
-            'role_id' => 1
+            'is_owner' => true,
+            'permissions' => json_encode([], JSON_THROW_ON_ERROR)
         ]);
         return ['id' => $table->id];
     }
 
     public function getTableControl()
     {
-        $callback = static function ($table) {
-            return [$table->id => $table->name];
-        };
-        return $this->makePage($callback, "TableControl");
+        /** @var User $user */
+        $user = auth()->user();
+        $tables = $user?->tables->mapWithKeys(static function ($table) use ($user) {
+            return [$table->id => [
+                'name' => $table->name,
+                'permissions' => $table->getUserPermissions($user->id)
+            ]];
+        })->all();
+        return Inertia::render("TableControl", [
+            'csrfToken' => csrf_token(),
+            'tables' => $tables,
+            'permissions' => Permissions::getDescriptions(),
+        ]);
     }
 
     private function makePage($function, $page, $updateData = false)
@@ -105,7 +119,7 @@ class TableService
         return response()->json(null, 204);
     }
 
-    public function remove(RemoveDTO $request)
+    public function remove(GetAndRemoveDTO $request)
     {
         $table = Table::find($request->id);
         $table->delete();
@@ -115,8 +129,14 @@ class TableService
     public function searchUsers(Request $request)
     {
         $query = $request->input('query');
-        return User::where('email', 'like', "$query%")
-            ->orWhere('name', 'like', "$query%")
+        $tableId = $request->input('tableId');
+        return User::where(function ($q) use ($query) {
+            $q->where('email', 'like', "$query%")
+                ->orWhere('name', 'like', "$query%");
+        })
+            ->whereDoesntHave('tables', function ($q) use ($tableId) {
+                $q->where('table_id', $tableId);
+            })
             ->limit(5)
             ->get(['id', 'name', 'email']);
     }
@@ -124,7 +144,10 @@ class TableService
     public function share(AddUserDTO $request)
     {
         $user = User::find($request->user);
-        $user->tables()->attach($request->table, ['role_id' => 2]);
+        $user->tables()->attach($request->table, [
+            'permissions' => json_encode($request->permissions, JSON_THROW_ON_ERROR),
+            'is_owner' => false,
+        ]);
         return response()->json(null, 204);
     }
 }

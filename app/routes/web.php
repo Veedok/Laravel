@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\PermissionsController;
 use App\Http\Controllers\TablesController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\ProfileController;
@@ -17,6 +18,9 @@ Route::patch('/tableControl', [TablesController::class, 'editTable'])->middlewar
 Route::delete('/tableControl', [TablesController::class, 'remove'])->middleware(['auth', 'verified'])->name('tableDelete');
 Route::get('/searchUser', [TablesController::class, 'userSearch'])->middleware(['auth', 'verified'])->name('userSearch');
 Route::post('/tableControl', [TablesController::class, 'share'])->middleware(['auth', 'verified'])->name('tableShare');
+Route::post('/tablesUsers', [PermissionsController::class, 'getUsers'])->middleware(['auth', 'verified'])->name('tableUsers');
+Route::patch('/tablesUsers', [PermissionsController::class, 'updatePermissions'])->middleware(['auth', 'verified'])->name('tableUpdatePermissions');
+Route::delete('/tablesUsers', [PermissionsController::class, 'removeUser'])->middleware(['auth', 'verified'])->name('tableRemoveUser');
 
 
 Route::post('/transactions', [TransactionController::class, 'saveData'])->middleware(['auth', 'verified'])->name('saveData');

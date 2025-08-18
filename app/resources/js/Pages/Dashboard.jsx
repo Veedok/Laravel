@@ -50,7 +50,7 @@ const NoTablesMessage = ({onAddTable}) => (
     </div>
 );
 
-export default function Dashboard({tables: initialTables}) {
+export default function Dashboard({theme, tables: initialTables}) {
     const [data, setData] = useState({
         transactions: [],
         permission: {
@@ -169,6 +169,7 @@ export default function Dashboard({tables: initialTables}) {
                 items={tables}
                 onItemClick={handleItemClick}
                 onAddItem={handleAddItem}
+                theme={theme} // Добавьте эту строку
             />
 
             {!hasTables ? (
@@ -181,7 +182,8 @@ export default function Dashboard({tables: initialTables}) {
                 <PayTable
                     data={data.transactions}
                     activeTableId={activeTableId}
-                    permissions={data.permission} // Передаем права в таблицу
+                    permissions={data.permission}
+                    theme={theme} // Добавьте эту строку
                 />
             )}
         </AuthenticatedLayout>

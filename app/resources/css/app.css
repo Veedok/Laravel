@@ -1,3 +1,20 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Дополнительные кастомные стили для темного режима */
+.dark {
+    --tw-bg-opacity: 1;
+    --tw-text-opacity: 1;
+}
+
+.dark body {
+    @apply bg-gray-900 text-gray-100;
+}
+.dark .modal-content {
+    @apply bg-gray-800 text-gray-100;
+}
+
+.dark .toast {
+    @apply bg-gray-700;
+}

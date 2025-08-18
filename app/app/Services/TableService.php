@@ -10,6 +10,7 @@ use App\DTO\TableDataDTO;
 use App\Enums\Permissions;
 use App\Models\Table;
 use App\Models\User;
+use App\Traits\ThemeTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -19,6 +20,7 @@ use Inertia\Response;
 class TableService
 {
 
+    use ThemeTrait;
     /**
      * Метод отображения главной страницы
      * @param int|null $tableId
@@ -83,12 +85,15 @@ class TableService
         /** @var User $user */
         $user = auth()->user();
         $tables = $user?->tables->mapWithKeys(static function ($table) use ($user) {
+            $owner = $table->users()->where('is_owner', true)->first();
             return [$table->id => [
+                'owner' => sprintf('Владелец: %s, %s',$owner->email, $owner->name),
                 'name' => $table->name,
                 'permissions' => $table->getUserPermissions($user->id)
             ]];
         })->all();
         return Inertia::render("TableControl", [
+            'theme' => $this->getTheme(),
             'csrfToken' => csrf_token(),
             'tables' => $tables,
             'permissions' => Permissions::getDescriptions(),
@@ -106,6 +111,7 @@ class TableService
             }
         }
         return Inertia::render($page, [
+            'theme' => $this->getTheme(),
             'csrfToken' => csrf_token(),
             'tables' => $tables,
         ]);

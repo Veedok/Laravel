@@ -24,6 +24,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'theme',
     ];
 
     /**
@@ -35,6 +36,9 @@ class User extends Authenticatable
         'remember_token',
     ];
 
+    protected $attributes = [
+        'theme' => 'light',
+    ];
     /**
      * Get the attributes that should be cast.
      *

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\PermissionsController;
 use App\Http\Controllers\TablesController;
+use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -21,7 +22,7 @@ Route::post('/tableControl', [TablesController::class, 'share'])->middleware(['a
 Route::post('/tablesUsers', [PermissionsController::class, 'getUsers'])->middleware(['auth', 'verified'])->name('tableUsers');
 Route::patch('/tablesUsers', [PermissionsController::class, 'updatePermissions'])->middleware(['auth', 'verified'])->name('tableUpdatePermissions');
 Route::delete('/tablesUsers', [PermissionsController::class, 'removeUser'])->middleware(['auth', 'verified'])->name('tableRemoveUser');
-
+Route::post('/toggle-theme', [ThemeController::class, 'toggle'])->middleware('web');
 
 Route::post('/transactions', [TransactionController::class, 'saveData'])->middleware(['auth', 'verified'])->name('saveData');
 Route::put('/transactions', [TransactionController::class, 'update'])->middleware(['auth', 'verified'])->name('updateData');

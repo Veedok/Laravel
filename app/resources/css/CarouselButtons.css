@@ -6,7 +6,6 @@
     height: 100px;
     align-items: center;
     position: relative;
-    background: #f5f5f5;
     border-radius: 8px;
     padding: 0 10px;
     box-sizing: border-box;
@@ -254,4 +253,125 @@
 
 .manage-tables-button:hover {
     background-color: #2d3748;
+}
+
+/* Добавьте эти стили в ваш CarouselButtons.css */
+
+.carousel-buttons.dark-theme {
+    color: #e5e7eb;
+}
+
+/* Кнопки в темной теме */
+.carousel-buttons.dark-theme .carousel-item.dark {
+    background-color: #374151;
+    color: #e5e7eb;
+    border: 1px solid #4b5563;
+}
+
+.carousel-buttons.dark-theme .carousel-item.dark.active {
+    background-color: #1e40af;
+    color: white;
+}
+
+.carousel-buttons.dark-theme .carousel-item.dark:hover:not(.active) {
+    background-color: #4b5563;
+}
+
+.carousel-buttons.dark-theme .carousel-item.dark:disabled {
+    opacity: 0.7;
+}
+
+/* Кнопка добавления */
+.carousel-buttons.dark-theme .add-button.dark {
+    background-color: #1e40af;
+    color: white;
+}
+
+.carousel-buttons.dark-theme .add-button.dark:hover {
+    background-color: #1e3a8a;
+}
+
+/* Форма добавления */
+.carousel-buttons.dark-theme .add-item-form.dark {
+    background-color: #374151;
+    border: 1px solid #4b5563;
+}
+
+.carousel-buttons.dark-theme .add-item-form.dark input.dark {
+    background-color: #4b5563;
+    color: #e5e7eb;
+    border: 1px solid #6b7280;
+}
+
+.carousel-buttons.dark-theme .add-item-form.dark input.dark::placeholder {
+    color: #9ca3af;
+}
+
+/* Кнопки формы */
+.carousel-buttons.dark-theme .form-buttons button.dark {
+    background-color: #1e40af;
+    color: white;
+}
+
+.carousel-buttons.dark-theme .form-buttons button.dark:hover {
+    background-color: #1e3a8a;
+}
+
+/* Кнопки прокрутки */
+.carousel-buttons.dark-theme .scroll-button.dark {
+    background-color: #374151;
+    color: #e5e7eb;
+}
+
+.carousel-buttons.dark-theme .scroll-button.dark:hover:not(.disabled) {
+    background-color: #4b5563;
+}
+
+.carousel-buttons.dark-theme .scroll-button.dark.disabled {
+    opacity: 0.5;
+}
+
+/* Мобильное меню */
+.carousel-buttons.dark-theme .mobile-menu.dark {
+    background-color: #1f2937;
+    border: 1px solid #4b5563;
+}
+
+.carousel-buttons.dark-theme .mobile-menu-toggle.dark {
+    background-color: #1e40af;
+    color: white;
+}
+
+.carousel-buttons.dark-theme .mobile-menu-toggle.dark:hover {
+    background-color: #1e3a8a;
+}
+
+/* Модальное окно ошибки */
+.carousel-buttons.dark-theme .error-modal.dark {
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+.carousel-buttons.dark-theme .error-modal-content.dark {
+    background-color: #1f2937;
+    color: #e5e7eb;
+    border: 1px solid #4b5563;
+}
+
+.carousel-buttons.dark-theme .error-modal-content.dark button.dark {
+    background-color: #1e40af;
+    color: white;
+}
+
+.carousel-buttons.dark-theme .error-modal-content.dark button.dark:hover {
+    background-color: #1e3a8a;
+}
+
+/* Кнопка управления таблицами */
+.carousel-buttons.dark-theme .manage-tables-button.dark {
+    background-color: #4b5563;
+    color: white;
+}
+
+.carousel-buttons.dark-theme .manage-tables-button.dark:hover {
+    background-color: #6b7280;
 }

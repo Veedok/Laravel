@@ -7,7 +7,7 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.jsx";
 import '../../css/TableControll.css';
 import TableUserManager from '../Components/TableUserManager';
 
-export default function TableManager({tables, permissions, userRights}) {
+export default function TableManager({theme, tables, permissions, userRights}) {
     const [selectedPermissions, setSelectedPermissions] = useState([]);
     const [emailSuggestions, setEmailSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -24,6 +24,7 @@ export default function TableManager({tables, permissions, userRights}) {
     const [localTables, setLocalTables] = useState(
         Object.entries(tables).map(([id, tableData]) => ({
             id,
+            owner: tableData.owner,
             name: tableData.name,
             permissions: tableData.permissions
         }))
@@ -32,13 +33,15 @@ export default function TableManager({tables, permissions, userRights}) {
     const [toast, setToast] = useState({
         show: false,
         message: '',
-        type: 'success' // 'success' или 'error'
+        type: 'success'
     });
+
     const hasPermission = (tablePermissions, permissionName) => {
         return tablePermissions?.is_owner ||
             (Array.isArray(tablePermissions?.permissions) &&
                 tablePermissions.permissions.includes(permissionName));
     };
+
     const fetchEmailSuggestions = async (query) => {
         try {
             const response = await axios.get(route('userSearch'), {
@@ -63,6 +66,7 @@ export default function TableManager({tables, permissions, userRights}) {
             setShowSuggestions(false);
         }
     };
+
     const showNotification = (message, type = 'success') => {
         setToast({
             show: true,
@@ -70,7 +74,6 @@ export default function TableManager({tables, permissions, userRights}) {
             type
         });
 
-        // Автоматическое скрытие через 5 секунд
         setTimeout(() => {
             setToast(prev => ({...prev, show: false}));
         }, 5000);
@@ -78,6 +81,7 @@ export default function TableManager({tables, permissions, userRights}) {
 
     const showSuccess = (message) => showNotification(message, 'success');
     const showError = (message) => showNotification(message, 'error');
+
     const handleEditStart = (id, name) => {
         setEditingId(id);
         setEditName(name);
@@ -103,7 +107,6 @@ export default function TableManager({tables, permissions, userRights}) {
                 name: editName
             });
 
-            // Обновляем локальное состояние таблиц
             setLocalTables(prev =>
                 prev.map(table =>
                     table.id === id ? {...table, name: editName} : table
@@ -147,7 +150,6 @@ export default function TableManager({tables, permissions, userRights}) {
             return;
         }
 
-        // Находим выбранного пользователя по email
         const selectedUser = emailSuggestions.find(user => user.email === email);
 
         if (!selectedUser) {
@@ -158,10 +160,10 @@ export default function TableManager({tables, permissions, userRights}) {
         setIsSharing(true);
 
         try {
-            const response = await axios.post(route('tableShare'), {
-                userId: selectedUser.id,  // ID пользователя
-                tableId: currentTable.id,  // ID таблицы
-                permissions: selectedPermissions // Выбранные разрешения
+            await axios.post(route('tableShare'), {
+                userId: selectedUser.id,
+                tableId: currentTable.id,
+                permissions: selectedPermissions
             }, {
                 headers: {
                     'Content-Type': 'application/json',
@@ -194,15 +196,12 @@ export default function TableManager({tables, permissions, userRights}) {
         }
 
         try {
-            const response = await axios.delete(route('tableDelete'), {
+            await axios.delete(route('tableDelete'), {
                 data: {id: currentTable.id}
             });
 
-            // Удаляем таблицу из локального состояния
             setLocalTables(prev => prev.filter(table => table.id !== currentTable.id));
-
             showSuccess('Таблица успешно удалена');
-
         } catch (error) {
             if (error.response) {
                 showError(error.response.data.message ||
@@ -217,7 +216,6 @@ export default function TableManager({tables, permissions, userRights}) {
         }
     };
 
-    // Автофокус на поле ввода при редактировании
     useEffect(() => {
         if (editingId && inputRef.current) {
             inputRef.current.focus();
@@ -228,33 +226,35 @@ export default function TableManager({tables, permissions, userRights}) {
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Таблица баланса
+                <h2 className={`text-xl font-semibold leading-tight ${theme === 'dark' ? 'text-gray-300' : 'text-gray-800'}`}>
+                    Управление таблицами
                 </h2>
             }
+            theme={theme}
         >
             <Head title="Таблица Баланса"/>
             <div className="container mx-auto px-4 py-8">
-                <div className="bg-white shadow-md rounded-lg overflow-hidden">
-                    <div className="px-6 py-4 border-b border-gray-200">
-                        <h2 className="text-xl font-semibold text-gray-800">Управление таблицами</h2>
+                <div className={`shadow-md rounded-lg overflow-hidden ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
+                    <div className={`px-6 py-4 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
+                        <h2 className={`text-xl font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-800'}`}>
+                            Управление таблицами
+                        </h2>
                     </div>
 
-                    <div className="divide-y divide-gray-200">
+                    <div className={`divide-y ${theme === 'dark' ? 'divide-gray-700' : 'divide-gray-200'}`}>
                         {localTables.map(table => (
                             <div key={table.id} className="px-6 py-4">
                                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                                     {editingId === table.id ? (
                                         <div className="flex flex-col flex-grow">
-                                            <div
-                                                className={`flex items-center gap-2 flex-grow ${isShaking ? 'animate-shake' : ''}`}>
+                                            <div className={`flex items-center gap-2 flex-grow ${isShaking ? 'animate-shake' : ''}`}>
                                                 <input
                                                     ref={inputRef}
                                                     type="text"
                                                     value={editName}
                                                     onChange={(e) => setEditName(e.target.value)}
                                                     className={`flex-grow px-3 py-1 border ${
-                                                        editError ? 'border-red-500' : 'border-gray-300'
+                                                        editError ? 'border-red-500' : theme === 'dark' ? 'border-gray-600 bg-gray-700 text-gray-100' : 'border-gray-300'
                                                     } rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
                                                     onKeyDown={(e) => {
                                                         if (e.key === 'Enter') handleEditSave(table.id);
@@ -263,14 +263,14 @@ export default function TableManager({tables, permissions, userRights}) {
                                                 />
                                                 <button
                                                     onClick={() => handleEditSave(table.id)}
-                                                    className="p-1 text-green-600 hover:text-green-800 hover:bg-green-100 rounded-full"
+                                                    className={`p-1 rounded-full ${theme === 'dark' ? 'text-green-400 hover:text-green-300 hover:bg-gray-700' : 'text-green-600 hover:text-green-800 hover:bg-green-100'}`}
                                                     title="Сохранить"
                                                 >
                                                     <CheckIcon className="h-5 w-5"/>
                                                 </button>
                                                 <button
                                                     onClick={handleEditCancel}
-                                                    className="p-1 text-red-600 hover:text-red-800 hover:bg-red-100 rounded-full"
+                                                    className={`p-1 rounded-full ${theme === 'dark' ? 'text-red-400 hover:text-red-300 hover:bg-gray-700' : 'text-red-600 hover:text-red-800 hover:bg-red-100'}`}
                                                     title="Отменить"
                                                 >
                                                     <XMarkIcon className="h-5 w-5"/>
@@ -284,14 +284,23 @@ export default function TableManager({tables, permissions, userRights}) {
                                         </div>
                                     ) : (
                                         <>
-                                            <div
-                                                className="font-medium text-gray-900 truncate flex-grow">{table.name}</div>
-
+                                            <div className={`font-medium truncate flex-grow ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
+                                                {table.name}
+                                            </div>
+                                            <span className={`ml-2 px-2 py-0.5 text-xs font-medium rounded-full ${
+                                                theme === 'dark' ? 'text-blue-300 bg-blue-900' : 'text-blue-700 bg-blue-100'
+                                            }`}>
+                                                {table.owner}
+                                            </span>
                                             <div className="flex space-x-2 sm:space-x-3">
                                                 {hasPermission(table.permissions, 'editTables') && (
                                                     <button
                                                         onClick={() => handleEditStart(table.id, table.name)}
-                                                        className="px-3 py-1 bg-blue-100 text-blue-800 rounded-md hover:bg-blue-200 text-sm sm:text-base"
+                                                        className={`px-3 py-1 rounded-md text-sm sm:text-base ${
+                                                            theme === 'dark'
+                                                                ? 'bg-blue-900 text-blue-300 hover:bg-blue-800'
+                                                                : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                                                        }`}
                                                     >
                                                         Редактировать
                                                     </button>
@@ -299,7 +308,11 @@ export default function TableManager({tables, permissions, userRights}) {
                                                 {hasPermission(table.permissions, 'invite') && (
                                                     <button
                                                         onClick={() => handleShare(table)}
-                                                        className="px-3 py-1 bg-green-100 text-green-800 rounded-md hover:bg-green-200 text-sm sm:text-base"
+                                                        className={`px-3 py-1 rounded-md text-sm sm:text-base ${
+                                                            theme === 'dark'
+                                                                ? 'bg-green-900 text-green-300 hover:bg-green-800'
+                                                                : 'bg-green-100 text-green-800 hover:bg-green-200'
+                                                        }`}
                                                     >
                                                         Поделиться
                                                     </button>
@@ -307,7 +320,11 @@ export default function TableManager({tables, permissions, userRights}) {
                                                 {hasPermission(table.permissions, 'removeTable') && (
                                                     <button
                                                         onClick={() => handleDelete(table)}
-                                                        className="px-3 py-1 bg-red-100 text-red-800 rounded-md hover:bg-red-200 text-sm sm:text-base"
+                                                        className={`px-3 py-1 rounded-md text-sm sm:text-base ${
+                                                            theme === 'dark'
+                                                                ? 'bg-red-900 text-red-300 hover:bg-red-800'
+                                                                : 'bg-red-100 text-red-800 hover:bg-red-200'
+                                                        }`}
                                                     >
                                                         Удалить
                                                     </button>
@@ -320,6 +337,7 @@ export default function TableManager({tables, permissions, userRights}) {
                                     <TableUserManager
                                         tableId={table.id}
                                         permissions={permissions}
+                                        theme={theme}
                                     />
                                 )}
                             </div>
@@ -327,10 +345,9 @@ export default function TableManager({tables, permissions, userRights}) {
                     </div>
                 </div>
 
-                {/* Модальное окно доступа */}
-                <Modal isOpen={shareModalOpen} onClose={() => setShareModalOpen(false)}>
+                <Modal isOpen={shareModalOpen} onClose={() => setShareModalOpen(false)} theme={theme}>
                     <div className="relative">
-                        <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900">
+                        <Dialog.Title as="h3" className={`text-lg font-medium leading-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
                             Предоставить доступ к "{currentTable?.name}"
                         </Dialog.Title>
                         <div className="mt-4">
@@ -342,22 +359,32 @@ export default function TableManager({tables, permissions, userRights}) {
                                     onChange={handleEmailChange}
                                     onFocus={() => email.length >= 3 && setShowSuggestions(true)}
                                     onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                                        theme === 'dark' ? 'border-gray-600 bg-gray-700 text-gray-100' : 'border-gray-300'
+                                    }`}
                                 />
                                 {showSuggestions && emailSuggestions.length > 0 && (
                                     <div className="absolute z-50 mt-1 w-full">
-                                        <ul className="bg-white shadow-lg rounded-md border border-gray-200">
+                                        <ul className={`shadow-lg rounded-md border ${
+                                            theme === 'dark' ? 'border-gray-600 bg-gray-800' : 'border-gray-200 bg-white'
+                                        }`}>
                                             {emailSuggestions.map((user) => (
                                                 <li
                                                     key={user.id}
-                                                    className="px-3 py-2 hover:bg-blue-50 cursor-pointer transition-colors"
+                                                    className={`px-3 py-2 cursor-pointer transition-colors ${
+                                                        theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-blue-50'
+                                                    }`}
                                                     onClick={() => {
                                                         setEmail(user.email);
                                                         setShowSuggestions(false);
                                                     }}
                                                 >
-                                                    <div className="font-medium text-gray-900">{user.name}</div>
-                                                    <div className="text-sm text-gray-500 truncate">{user.email}</div>
+                                                    <div className={`font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
+                                                        {user.name}
+                                                    </div>
+                                                    <div className={`text-sm truncate ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                                                        {user.email}
+                                                    </div>
                                                 </li>
                                             ))}
                                         </ul>
@@ -365,9 +392,10 @@ export default function TableManager({tables, permissions, userRights}) {
                                 )}
                             </div>
 
-                            {/* Добавляем блок с чекбоксами */}
                             <div className="mt-4">
-                                <h4 className="text-sm font-medium text-gray-700 mb-2">Разрешения:</h4>
+                                <h4 className={`text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                                    Разрешения:
+                                </h4>
                                 <div className="space-y-2">
                                     {Object.entries(permissions).map(([key, label]) => (
                                         <div key={key} className="flex items-center">
@@ -382,9 +410,13 @@ export default function TableManager({tables, permissions, userRights}) {
                                                         setSelectedPermissions(selectedPermissions.filter(p => p !== key));
                                                     }
                                                 }}
-                                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                                className={`h-4 w-4 text-blue-600 focus:ring-blue-500 rounded ${
+                                                    theme === 'dark' ? 'border-gray-600 bg-gray-700' : 'border-gray-300'
+                                                }`}
                                             />
-                                            <label htmlFor={`permission-${key}`} className="ml-2 text-sm text-gray-700">
+                                            <label htmlFor={`permission-${key}`} className={`ml-2 text-sm ${
+                                                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                                            }`}>
                                                 {label}
                                             </label>
                                         </div>
@@ -401,7 +433,9 @@ export default function TableManager({tables, permissions, userRights}) {
                                     setEmailSuggestions([]);
                                     setSelectedPermissions([]);
                                 }}
-                                className="px-4 py-2 bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200"
+                                className={`px-4 py-2 rounded-md hover:bg-opacity-80 ${
+                                    theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800'
+                                }`}
                             >
                                 Отмена
                             </button>
@@ -409,8 +443,10 @@ export default function TableManager({tables, permissions, userRights}) {
                                 type="button"
                                 onClick={submitShare}
                                 disabled={isSharing || !email}
-                                className={`px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 ${
+                                className={`px-4 py-2 text-white rounded-md hover:bg-opacity-90 ${
                                     isSharing ? 'opacity-50 cursor-not-allowed' : ''
+                                } ${
+                                    theme === 'dark' ? 'bg-green-700' : 'bg-green-600'
                                 }`}
                             >
                                 {isSharing ? 'Отправка...' : 'Поделиться'}
@@ -418,13 +454,13 @@ export default function TableManager({tables, permissions, userRights}) {
                         </div>
                     </div>
                 </Modal>
-                {/* Модальное окно удаления */}
-                <Modal isOpen={deleteModalOpen} onClose={() => setDeleteModalOpen(false)}>
-                    <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900">
+
+                <Modal isOpen={deleteModalOpen} onClose={() => setDeleteModalOpen(false)} theme={theme}>
+                    <Dialog.Title as="h3" className={`text-lg font-medium leading-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
                         Удалить таблицу
                     </Dialog.Title>
                     <div className="mt-2">
-                        <p className="text-sm text-gray-500">
+                        <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
                             Вы уверены, что хотите удалить таблицу "{currentTable?.name}"? Это действие нельзя отменить.
                         </p>
                         {deleteError && (
@@ -438,7 +474,9 @@ export default function TableManager({tables, permissions, userRights}) {
                                 setDeleteModalOpen(false);
                                 setDeleteError('');
                             }}
-                            className="px-4 py-2 bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200"
+                            className={`px-4 py-2 rounded-md hover:bg-opacity-80 ${
+                                theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800'
+                            }`}
                         >
                             Отмена
                         </button>
@@ -453,18 +491,20 @@ export default function TableManager({tables, permissions, userRights}) {
                     </div>
                 </Modal>
             </div>
+
             {toast.show && (
                 <ToastNotification
                     message={toast.message}
                     type={toast.type}
                     onClose={() => setToast(prev => ({...prev, show: false}))}
+                    theme={theme}
                 />
             )}
         </AuthenticatedLayout>
     );
 }
 
-function Modal({isOpen, onClose, children}) {
+function Modal({isOpen, onClose, children, theme}) {
     return (
         <Transition appear show={isOpen} as={Fragment}>
             <Dialog as="div" className="relative z-10" onClose={onClose}>
@@ -491,8 +531,9 @@ function Modal({isOpen, onClose, children}) {
                             leaveFrom="opacity-100 scale-100"
                             leaveTo="opacity-0 scale-95"
                         >
-                            <Dialog.Panel
-                                className="w-full max-w-md transform overflow-visible rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+                            <Dialog.Panel className={`w-full max-w-md transform overflow-visible rounded-2xl p-6 text-left align-middle shadow-xl transition-all ${
+                                theme === 'dark' ? 'bg-gray-800 text-gray-100' : 'bg-white text-gray-900'
+                            }`}>
                                 {children}
                             </Dialog.Panel>
                         </Transition.Child>
@@ -503,8 +544,10 @@ function Modal({isOpen, onClose, children}) {
     );
 }
 
-function ToastNotification({message, type = 'success', onClose}) {
-    const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+function ToastNotification({message, type = 'success', onClose, theme}) {
+    const bgColor = type === 'success'
+        ? (theme === 'dark' ? 'bg-green-700' : 'bg-green-600')
+        : (theme === 'dark' ? 'bg-red-700' : 'bg-red-600');
 
     return (
         <div

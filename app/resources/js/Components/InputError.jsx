@@ -1,9 +1,6 @@
-export default function InputError({ message, className = '', ...props }) {
+export default function InputError({ message, className = '', theme = 'light' }) {
     return message ? (
-        <p
-            {...props}
-            className={'text-sm text-red-600 ' + className}
-        >
+        <p className={`text-sm ${theme === 'dark' ? 'text-red-400' : 'text-red-600'} ${className}`}>
             {message}
         </p>
     ) : null;

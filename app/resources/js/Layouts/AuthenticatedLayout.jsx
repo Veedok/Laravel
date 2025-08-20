@@ -19,7 +19,7 @@ export default function AuthenticatedLayout({ header, children }) {
                         <div className="flex">
                             <div className="flex shrink-0 items-center">
                                 <Link href="/">
-                                    <ApplicationLogo className={`block h-9 w-auto fill-current ${theme === 'dark' ? 'text-gray-300' : 'text-gray-800'}`} />
+                                    <ApplicationLogo className={`block h-14 w-auto fill-current ${theme === 'dark' ? 'text-gray-300' : 'text-gray-800'}`} />
                                 </Link>
                             </div>
 
@@ -186,17 +186,6 @@ export default function AuthenticatedLayout({ header, children }) {
                     </div>
                 </div>
             </nav>
-
-            {header && (
-                <header className={`shadow ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
-                    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-                        <h2 className={`text-xl font-semibold leading-tight ${theme === 'dark' ? 'text-gray-300' : 'text-gray-800'}`}>
-                            {header}
-                        </h2>
-                    </div>
-                </header>
-            )}
-
             <main className={`${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
                 {children}
             </main>

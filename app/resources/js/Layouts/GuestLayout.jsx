@@ -1,8 +1,9 @@
 import ApplicationLogo from '@/Components/ApplicationLogo';
-import { Link } from '@inertiajs/react';
+import {Link, usePage} from '@inertiajs/react';
 import ThemeToggle from '@/Components/ThemeToggle';
 
 export default function GuestLayout({ children }) {
+    const theme = usePage().props.theme || 'light';
     return (
         <div className="flex min-h-screen flex-col items-center bg-gray-100 dark:bg-gray-900 pt-6 sm:justify-center sm:pt-0">
             <div className="flex w-full justify-end px-6">
@@ -11,7 +12,7 @@ export default function GuestLayout({ children }) {
 
             <div>
                 <Link href="/">
-                    <ApplicationLogo className="h-20 w-20 fill-current text-gray-500 dark:text-gray-400" />
+                    <ApplicationLogo className={`block h-14 w-auto fill-current ${theme === 'dark' ? 'text-gray-300' : 'text-gray-800'}`} />
                 </Link>
             </div>
 

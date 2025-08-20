@@ -3,7 +3,7 @@
     display: flex;
     width: 100%;
     max-width: 1400px;
-    height: 100px;
+    height: 160px;
     align-items: center;
     position: relative;
     border-radius: 8px;
@@ -374,4 +374,297 @@
 
 .carousel-buttons.dark-theme .manage-tables-button.dark:hover {
     background-color: #6b7280;
+}
+/* Добавьте эти стили в CarouselButtons.css */
+
+/* Стили для вкладок */
+.nav-tabs {
+    display: flex;
+    list-style: none;
+    padding: 0;
+    margin: 0 0 15px 0;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.nav-item {
+    margin-bottom: -1px;
+}
+
+.nav-link {
+    padding: 0.5rem 1rem;
+    border: 1px solid transparent;
+    border-top-left-radius: 0.25rem;
+    border-top-right-radius: 0.25rem;
+    background: none;
+    cursor: pointer;
+    color: #495057;
+    text-decoration: none;
+}
+
+.nav-link:hover {
+    border-color: #e9ecef #e9ecef #dee2e6;
+}
+
+.nav-link.active {
+    color: #495057;
+    background-color: #fff;
+    border-color: #dee2e6 #dee2e6 #fff;
+    font-weight: bold;
+}
+
+/* Выпадающий список для мобильной версии */
+.mobile-tabs-select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background: white;
+    font-size: 16px;
+}
+
+/* Темная тема для вкладок */
+.carousel-buttons.dark-theme .nav-tabs.dark {
+    border-bottom-color: #4b5563;
+}
+
+.carousel-buttons.dark-theme .nav-link.dark {
+    color: #e5e7eb;
+}
+
+.carousel-buttons.dark-theme .nav-link.dark:hover {
+    border-color: #4b5563 #4b5563 #6b7280;
+    color: #ffffff;
+}
+
+.carousel-buttons.dark-theme .nav-link.dark.active {
+    color: #e5e7eb;
+    background-color: #1f2937;
+    border-color: #4b5563 #4b5563 #1f2937;
+}
+
+.carousel-buttons.dark-theme .mobile-tabs-select.dark {
+    background: #374151;
+    color: #e5e7eb;
+    border-color: #4b5563;
+}
+
+/* Адаптация для мобильной версии */
+@media (max-width: 768px) {
+    .nav-tabs {
+        display: none;
+    }
+
+    .mobile-tabs-select {
+        display: block;
+    }
+
+    .carousel-container-wrapper {
+        display: none;
+    }
+
+    .add-button-container {
+        display: none;
+    }
+}
+
+@media (min-width: 769px) {
+    .mobile-tabs-select {
+        display: none;
+    }
+}
+
+/* Дополнительные стили для лучшего отображения */
+.carousel-buttons {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.carousel-container-wrapper {
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.add-button-container {
+    width: 100%;
+    padding-left: 0;
+}
+/* Добавьте эти стили в CarouselButtons.css */
+
+/* Стили для вкладок */
+.nav-tabs {
+    display: flex;
+    list-style: none;
+    padding: 0;
+    margin: 0 0 15px 0;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.nav-item {
+    margin-bottom: -1px;
+}
+
+.nav-link {
+    padding: 0.5rem 1rem;
+    border: 1px solid transparent;
+    border-top-left-radius: 0.25rem;
+    border-top-right-radius: 0.25rem;
+    background: none;
+    cursor: pointer;
+    color: #495057;
+    text-decoration: none;
+}
+
+.nav-link:hover {
+    border-color: #e9ecef #e9ecef #dee2e6;
+}
+
+.nav-link.active {
+    color: #495057;
+    background-color: #fff;
+    border-color: #dee2e6 #dee2e6 #fff;
+    font-weight: bold;
+}
+
+/* Контейнер для десктопного контента */
+.desktop-content-wrapper {
+    display: flex;
+    width: 100%;
+    gap: 15px;
+    align-items: flex-start;
+}
+
+.carousel-container-wrapper {
+    flex: 3; /* 75% ширины */
+    position: relative;
+    min-width: 0;
+}
+
+.add-button-container {
+    flex: 0.8; /* 25% ширины */
+    min-width: 120px;
+    padding-left: 0;
+    box-sizing: border-box;
+}
+
+/* Выпадающий список для мобильной версии */
+.mobile-tabs-select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background: white;
+    font-size: 16px;
+}
+
+/* Темная тема для вкладок */
+.carousel-buttons.dark-theme .nav-tabs.dark {
+    border-bottom-color: #4b5563;
+}
+
+.carousel-buttons.dark-theme .nav-link.dark {
+    color: #e5e7eb;
+}
+
+.carousel-buttons.dark-theme .nav-link.dark:hover {
+    border-color: #4b5563 #4b5563 #6b7280;
+    color: #ffffff;
+}
+
+.carousel-buttons.dark-theme .nav-link.dark.active {
+    color: #e5e7eb;
+    background-color: #1f2937;
+    border-color: #4b5563 #4b5563 #1f2937;
+}
+
+.carousel-buttons.dark-theme .mobile-tabs-select.dark {
+    background: #374151;
+    color: #e5e7eb;
+    border-color: #4b5563;
+}
+
+/* Адаптация для мобильной версии */
+@media (max-width: 768px) {
+    .nav-tabs {
+        display: none;
+    }
+
+    .desktop-content-wrapper {
+        display: none;
+    }
+
+    .mobile-tabs-select {
+        display: block;
+    }
+}
+
+@media (min-width: 769px) {
+    .mobile-tabs-select {
+        display: none;
+    }
+
+    .desktop-content-wrapper {
+        display: flex;
+    }
+}
+
+/* Дополнительные стили */
+.carousel-buttons {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.add-button {
+    width: 100%;
+    height: 50px;
+    background: #4470e4;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    white-space: nowrap;
+}
+
+.add-button:hover {
+    background: #3b5fc7;
+}
+
+/* Форма добавления */
+.add-item-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.add-item-form input {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.form-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.form-buttons button {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.form-buttons button:first-child {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.form-buttons button:last-child {
+    background-color: #f44336;
+    color: white;
 }

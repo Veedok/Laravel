@@ -5,11 +5,14 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 /** Модель пользователя
  * @property mixed $pivot
+ * @property mixed|null $tables
+ * @property mixed $id
  */
 class User extends Authenticatable
 {
@@ -90,5 +93,10 @@ class User extends Authenticatable
     public function checkTablePermission($id, $permission)
     {
         return $this->tables()->find($id)?->pivot->hasPermission($permission);
+    }
+
+    public function userTables(): HasMany
+    {
+        return $this->hasMany(UserTable::class);
     }
 }

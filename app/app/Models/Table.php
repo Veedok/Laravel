@@ -19,6 +19,10 @@ class Table extends Model
         'name',
     ];
 
+    public function ownerTable(): HasMany
+    {
+        return $this->hasMany(UserTable::class);
+    }
     /**
      * Связь с пользователями
      * @return BelongsToMany
@@ -50,5 +54,11 @@ class Table extends Model
             'is_owner' => $user->pivot->is_owner,
             'permissions' => !$user->pivot->is_owner ? json_decode($user->pivot->permissions, true) : []
         ];
+    }
+
+    public function getOwner($id = false)
+    {
+        $relation = $this->ownerTable()->where('is_owner', true)->first();
+        return $id ? $relation->user->id : $relation->user;
     }
 }

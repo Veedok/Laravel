@@ -89,9 +89,14 @@ export default function Login({ status, canResetPassword }) {
                             Forgot your password?
                         </Link>
                     )}
-
+                    <Link
+                        href={route('register')}
+                        className="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 ms-4"
+                    >
+                        Регистрация
+                    </Link>
                     <PrimaryButton className="ms-4" disabled={processing} type={'submit'}>
-                        Log in
+                        Войти
                     </PrimaryButton>
                 </div>
             </form>

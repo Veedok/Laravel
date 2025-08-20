@@ -15,12 +15,14 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use JsonException;
 
 /** Сервис для работы с таблицами */
 class TableService
 {
 
     use ThemeTrait;
+
     /**
      * Метод отображения главной страницы
      * @param int|null $tableId
@@ -28,15 +30,27 @@ class TableService
      */
     public function getMainPage(?int $tableId): Response
     {
-        $callback = static function ($table) use ($tableId) {
+        /** @var User $user */
+        $user = auth()->user();
+        $tables = $user?->tables->mapWithKeys(static function ($table) use ($tableId, $user) {
             return [
                 $table->id => [
                     'name' => $table->name,
-                    'active' => $table->id === $tableId
+                    'active' => $table->id === $tableId,
+                    'owner' => $table->getOwner(true) === $user->id
                 ]
             ];
-        };
-        return $this->makePage($callback, "Dashboard", true);
+        })->all();
+        $activeResult = array_unique(array_column($tables, 'active'));
+        if (count($activeResult) === 1 && empty(current($activeResult))) {
+            $key = key($tables);
+            $tables[$key]['active'] = true;
+        }
+        return Inertia::render("Dashboard", [
+            'theme' => $this->getTheme(),
+            'csrfToken' => csrf_token(),
+            'tables' => $tables,
+        ]);
     }
 
     /**
@@ -67,6 +81,7 @@ class TableService
      * Создание новой таблицы
      * @param NewTableDTO $request
      * @return array
+     * @throws JsonException
      */
     public function newTable(NewTableDTO $request): array
     {
@@ -80,14 +95,17 @@ class TableService
         return ['id' => $table->id];
     }
 
-    public function getTableControl()
+    /**
+     * @return Response
+     */
+    public function getTableControl(): Response
     {
         /** @var User $user */
         $user = auth()->user();
         $tables = $user?->tables->mapWithKeys(static function ($table) use ($user) {
             $owner = $table->users()->where('is_owner', true)->first();
             return [$table->id => [
-                'owner' => sprintf('Владелец: %s, %s',$owner->email, $owner->name),
+                'owner' => sprintf('Владелец: %s, %s', $owner->email, $owner->name),
                 'name' => $table->name,
                 'permissions' => $table->getUserPermissions($user->id)
             ]];
@@ -100,24 +118,7 @@ class TableService
         ]);
     }
 
-    private function makePage($function, $page, $updateData = false)
-    {
-        $tables = auth()->user()?->tables->mapWithKeys($function)->all();
-        if ($updateData) {
-            $activeResult = array_unique(array_column($tables, 'active'));
-            if (count($activeResult) === 1 && empty(current($activeResult))) {
-                $key = key($tables);
-                $tables[$key]['active'] = true;
-            }
-        }
-        return Inertia::render($page, [
-            'theme' => $this->getTheme(),
-            'csrfToken' => csrf_token(),
-            'tables' => $tables,
-        ]);
-    }
-
-    public function edit(UpdateDTO $request)
+    public function edit(UpdateDTO $request): JsonResponse
     {
         $table = Table::find($request->id);
         $table->name = $request->name;

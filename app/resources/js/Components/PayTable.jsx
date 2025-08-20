@@ -1,7 +1,6 @@
-import React, {useState} from 'react';
-import {router} from '@inertiajs/react';
-import '../../css/payTable.css';
+import React, { useState } from 'react';
 import axios from 'axios';
+import '../../css/payTable.css';
 
 const TransactionsTable = ({ data, activeTableId, permissions, theme }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -62,7 +61,6 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme }) => {
             resetForm();
         } catch (error) {
             if (error.response) {
-                // Ошибка от сервера (4xx/5xx)
                 const errorData = error.response.data;
                 setErrorMessage(
                     errorData.message ||
@@ -70,12 +68,11 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme }) => {
                     'Ошибка сервера'
                 );
             } else {
-                // Ошибка сети или другая проблема
                 setErrorMessage('Не удалось выполнить запрос. Проверьте соединение.');
             }
-            console.error('Submission error:', error);
         }
     };
+
     const handleEdit = (transaction) => {
         setEditingId(transaction.id);
         setFormData({
@@ -88,52 +85,36 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme }) => {
         setIsModalOpen(true);
         setErrorMessage(null);
     };
+
     const handleDeleteClick = (id) => {
         setItemToDelete(id);
         setDeleteModalOpen(true);
     };
+
     const handleConfirmDelete = async () => {
-        // Дополнительная проверка на случай, если modal был закрыт до завершения операции
         if (!itemToDelete || deleteModalOpen === false) {
             setItemToDelete(null);
             return;
         }
 
         try {
-            // Фиксируем ID для удаления на момент начала операции
             const deletingId = itemToDelete;
-
-            const response = await axios.delete(route('deleteData'), {
+            await axios.delete(route('deleteData'), {
                 data: { id: deletingId }
             });
 
-            // Дополнительная проверка, что удаляемый элемент еще актуален
-            setTransactions(prev => {
-                if (!prev.some(t => t.id === deletingId)) {
-                    console.warn('Элемент уже был удален');
-                    return prev;
-                }
-                return prev.filter(t => t.id !== deletingId);
-            });
-
+            setTransactions(prev => prev.filter(t => t.id !== deletingId));
             showSuccess('Запись успешно удалена');
         } catch (error) {
-            if (error.response) {
-                setErrorMessage(
-                    error.response.data.message ||
-                    `Ошибка при удалении (код: ${error.response.status})`
-                );
-
-                // Если это ошибка 404 (уже удален) - просто закрываем модальное окно
-                if (error.response.status === 404) {
-                    showSuccess('Запись уже была удалена');
-                }
+            if (error.response?.status === 404) {
+                showSuccess('Запись уже была удалена');
             } else {
-                setErrorMessage('Не удалось выполнить удаление. Проверьте соединение.');
+                setErrorMessage(
+                    error.response?.data.message ||
+                    'Не удалось выполнить удаление. Проверьте соединение.'
+                );
             }
-            console.error('Delete error:', error);
         } finally {
-            // Всегда сбрасываем состояние, даже если были ошибки
             setDeleteModalOpen(false);
             setItemToDelete(null);
         }
@@ -171,10 +152,20 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme }) => {
             acc.expense += item.sum;
         }
         return acc;
-    }, {income: 0, expense: 0});
+    }, { income: 0, expense: 0 });
+
+    const formatCurrency = (amount) => {
+        return amount.toLocaleString('ru-RU', {
+            style: 'currency',
+            currency: 'RUB',
+            minimumFractionDigits: 2
+        });
+    };
+
 
     return (
-        <div className={`space-y-4 table_container ${theme === 'dark' ? 'bg-gray-800 text-gray-100' : 'bg-white text-gray-900'}`}>
+        <div className={`space-y-6 table_container ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
+
             {/* Уведомление об успехе */}
             {successMessage && (
                 <div className={`fixed top-4 right-4 px-4 py-2 rounded-md shadow-lg z-50 ${
@@ -183,136 +174,64 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme }) => {
                     {successMessage}
                 </div>
             )}
-            <div className="overflow-x-auto">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 min-w-full" style={{minWidth: 'fit-content'}}>
-                    <div className={`p-4 rounded-lg border ${
-                        theme === 'dark'
-                            ? 'bg-gray-700 border-gray-600 text-green-300'
-                            : 'bg-green-50 border-green-100 text-green-800'
-                    }`}>
-                        <h3 className="text-sm font-medium">Суммарный приход</h3>
-                        <p className="text-2xl font-semibold">
-                            {totals.income.toLocaleString('ru-RU', {
-                                style: 'currency',
-                                currency: 'RUB',
-                                minimumFractionDigits: 2
-                            })}
-                        </p>
-                    </div>
 
-                    <div className={`p-4 rounded-lg border ${
-                        theme === 'dark'
-                            ? 'bg-gray-700 border-gray-600 text-red-300'
-                            : 'bg-red-50 border-red-100 text-red-800'
-                    }`}>
-                        <h3 className="text-sm font-medium">Суммарный расход</h3>
-                        <p className="text-2xl font-semibold">
-                            {totals.expense.toLocaleString('ru-RU', {
-                                style: 'currency',
-                                currency: 'RUB',
-                                minimumFractionDigits: 2
-                            })}
-                        </p>
-                    </div>
+            {/* Суммарные показатели */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className={`p-4 rounded-lg border ${
+                    theme === 'dark'
+                        ? 'bg-gray-700 border-gray-600 text-green-300'
+                        : 'bg-green-50 border-green-100 text-green-800'
+                }`}>
+                    <h3 className="text-sm font-medium">Суммарный приход</h3>
+                    <p className="text-2xl font-semibold">{formatCurrency(totals.income)}</p>
+                </div>
+
+                <div className={`p-4 rounded-lg border ${
+                    theme === 'dark'
+                        ? 'bg-gray-700 border-gray-600 text-red-300'
+                        : 'bg-red-50 border-red-100 text-red-800'
+                }`}>
+                    <h3 className="text-sm font-medium">Суммарный расход</h3>
+                    <p className="text-2xl font-semibold">{formatCurrency(totals.expense)}</p>
                 </div>
             </div>
-
-            {/* Таблица */}
-            <div className="overflow-x-auto">
+            <div className="hidden md:block">
                 <table className="min-w-full divide-y">
                     <thead className={theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'}>
                     <tr>
-                        <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
-                            theme === 'dark' ? 'text-gray-300' : 'text-gray-500'
-                        }`}>
-                            Название
-                        </th>
-                        <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
-                            theme === 'dark' ? 'text-gray-300' : 'text-gray-500'
-                        }`}>
-                            Тип операции
-                        </th>
-                        <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
-                            theme === 'dark' ? 'text-gray-300' : 'text-gray-500'
-                        }`}>
-                            Сумма
-                        </th>
-                        <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
-                            theme === 'dark' ? 'text-gray-300' : 'text-gray-500'
-                        }`}>
-                            Дата
-                        </th>
-                        <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider action_head ${
-                            theme === 'dark' ? 'text-gray-300' : 'text-gray-500'
-                        }`}>
-                            Действия
-                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Название</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Тип операции</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Сумма</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Дата</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider action_head">Действия</th>
                     </tr>
                     </thead>
                     <tbody className={`divide-y ${
-                        theme === 'dark'
-                            ? 'bg-gray-800 divide-gray-700'
-                            : 'bg-white divide-gray-200'
+                        theme === 'dark' ? 'bg-gray-800 divide-gray-700' : 'bg-white divide-gray-200'
                     }`}>
                     {transactions.map((item) => (
                         <tr key={item.id}>
-                            <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
-                                theme === 'dark' ? 'text-gray-100' : 'text-gray-900'
-                            }`}>
-                                {item.title}
-                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{item.title}</td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                {item.changeBalance ? (
                                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                        theme === 'dark'
-                                            ? 'bg-green-900 text-green-300'
-                                            : 'bg-green-100 text-green-800'
+                                        item.changeBalance
+                                            ? theme === 'dark' ? 'bg-green-900 text-green-300' : 'bg-green-100 text-green-800'
+                                            : theme === 'dark' ? 'bg-red-900 text-red-300' : 'bg-red-100 text-red-800'
                                     }`}>
-                                        Приход
+                                        {item.changeBalance ? 'Приход' : 'Расход'}
                                     </span>
-                                ) : (
-                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                        theme === 'dark'
-                                            ? 'bg-red-900 text-red-300'
-                                            : 'bg-red-100 text-red-800'
-                                    }`}>
-                                        Расход
-                                    </span>
-                                )}
                             </td>
-                            <td className={`px-6 py-4 whitespace-nowrap text-sm ${
-                                theme === 'dark' ? 'text-gray-300' : 'text-gray-500'
-                            }`}>
-                                {item.sum.toLocaleString('ru-RU', {
-                                    style: 'currency',
-                                    currency: 'RUB',
-                                    minimumFractionDigits: 2
-                                })}
-                            </td>
-                            <td className={`px-6 py-4 whitespace-nowrap text-sm ${
-                                theme === 'dark' ? 'text-gray-300' : 'text-gray-500'
-                            }`}>
-                                {item.date}
-                            </td>
-                            <td className={`px-6 py-4 whitespace-nowrap text-sm ${
-                                theme === 'dark' ? 'text-gray-300' : 'text-gray-500'
-                            }`}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">{formatCurrency(item.sum)}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">{item.date}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
                                 <div className="flex space-x-2 action_row">
                                     {(permissions.is_owner || permissions.permissions.includes('editTransactions')) && (
-                                        <button
-                                            onClick={() => handleEdit(item)}
-                                            className={theme === 'dark' ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-900'}
-                                            title="Редактировать"
-                                        >
+                                        <button onClick={() => handleEdit(item)} className="text-indigo-600 hover:text-indigo-900" title="Редактировать">
                                             ✏️
                                         </button>
                                     )}
                                     {(permissions.is_owner || permissions.permissions.includes('deleteTransactions')) && (
-                                        <button
-                                            onClick={() => handleDeleteClick(item.id)}
-                                            className={theme === 'dark' ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-900'}
-                                            title="Удалить"
-                                        >
+                                        <button onClick={() => handleDeleteClick(item.id)} className="text-red-600 hover:text-red-900" title="Удалить">
                                             🗑️
                                         </button>
                                     )}
@@ -323,17 +242,79 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme }) => {
                     </tbody>
                 </table>
             </div>
+
+            {/* Мобильные карточки (показаны только на мобильных) */}
+            <div className="md:hidden space-y-3">
+                {transactions.map((item) => (
+                    <div key={item.id} className={`p-4 rounded-lg border ${
+                        theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'
+                    }`}>
+                        <div className="flex justify-between items-start mb-3">
+                            <h3 className="font-semibold text-lg">{item.title}</h3>
+                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                                item.changeBalance
+                                    ? theme === 'dark' ? 'bg-green-900 text-green-300' : 'bg-green-100 text-green-800'
+                                    : theme === 'dark' ? 'bg-red-900 text-red-300' : 'bg-red-100 text-red-800'
+                            }`}>
+                                {item.changeBalance ? 'Приход' : 'Расход'}
+                            </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 text-sm mb-3">
+                            <div>
+                                <span className="text-gray-500">Сумма:</span>
+                                <p className="font-medium">{formatCurrency(item.sum)}</p>
+                            </div>
+                            <div>
+                                <span className="text-gray-500">Дата:</span>
+                                <p className="font-medium">{item.date}</p>
+                            </div>
+                        </div>
+
+                        {(permissions.is_owner || permissions.permissions.includes('editTransactions') || permissions.permissions.includes('deleteTransactions')) && (
+                            <div className="flex space-x-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                                {(permissions.is_owner || permissions.permissions.includes('editTransactions')) && (
+                                    <button
+                                        onClick={() => handleEdit(item)}
+                                        className={`flex-1 py-2 px-3 rounded-md text-center ${
+                                            theme === 'dark'
+                                                ? 'bg-indigo-700 text-white hover:bg-indigo-600'
+                                                : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
+                                        }`}
+                                    >
+                                        ✏️ Изменить
+                                    </button>
+                                )}
+                                {(permissions.is_owner || permissions.permissions.includes('deleteTransactions')) && (
+                                    <button
+                                        onClick={() => handleDeleteClick(item.id)}
+                                        className={`flex-1 py-2 px-3 rounded-md text-center ${
+                                            theme === 'dark'
+                                                ? 'bg-red-700 text-white hover:bg-red-600'
+                                                : 'bg-red-100 text-red-700 hover:bg-red-200'
+                                        }`}
+                                    >
+                                        🗑️ Удалить
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                ))}
+            </div>
+
+            {/* Кнопка добавления */}
             {(permissions.is_owner || permissions.permissions.includes('addTransaction')) && (
                 <div className="flex justify-end">
                     <button
                         onClick={() => setIsModalOpen(true)}
-                        className={`px-4 py-2 rounded-md hover:bg-blue-700 transition-colors ${
+                        className={`px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors ${
                             theme === 'dark'
                                 ? 'bg-blue-700 text-white hover:bg-blue-600'
                                 : 'bg-blue-600 text-white hover:bg-blue-700'
                         }`}
                     >
-                        Добавить запись
+                        + Добавить запись
                     </button>
                 </div>
             )}
@@ -381,14 +362,11 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme }) => {
             )}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                    <div className={`rounded-lg shadow-xl w-full max-w-md ${
-                        theme === 'dark' ? 'bg-gray-800' : 'bg-white'
-                    }`}>
+                    <div
+                        className={`rounded-lg shadow-xl w-full max-w-md ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
                         <div className="p-6">
-                            <h2 className={`text-xl font-semibold mb-4 ${
-                                theme === 'dark' ? 'text-gray-100' : 'text-gray-900'
-                            }`}>
-                                {editingId ? 'Редактировать запись' : 'Добавить новую запись'}
+                            <h2 className={`text-xl font-semibold mb-4 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
+                                {editingId ? 'Редактировать запись' : 'Добавить запись'}
                             </h2>
 
                             {errorMessage && (

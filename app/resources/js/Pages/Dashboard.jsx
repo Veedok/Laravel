@@ -70,14 +70,13 @@ export default function Dashboard({theme, tables: initialTables}) {
             const initialActiveId = Object.keys(tables).find(key => tables[key].active === true);
             setActiveTableId(initialActiveId || Object.keys(tables)[0]);
         }
-    }, []);
+    }, [hasTables]);
 
     useEffect(() => {
-        // Загружаем данные только если таблица активна
-        if (activeTableId && tables[activeTableId]?.active) {
+        if (activeTableId) {
             fetchTransactions(activeTableId);
         }
-    }, [activeTableId, tables]);
+    }, [activeTableId]);
 
     const fetchTransactions = async (tableId) => {
         try {
@@ -89,26 +88,23 @@ export default function Dashboard({theme, tables: initialTables}) {
             setData(response.data); // Теперь сохраняем всю структуру ответа
         } catch (err) {
             setError('Не удалось загрузить данные. Пожалуйста, попробуйте позже.');
-            console.error(err);
         } finally {
             setLoading(false);
         }
     };
 
     const handleItemClick = (id) => {
-        // Сначала обновляем состояние таблиц
         setTables(prev => {
             const updated = {};
             Object.keys(prev).forEach(key => {
                 updated[key] = {
                     ...prev[key],
-                    active: key === id
+                    active: key === id.toString()
                 };
             });
             return updated;
         });
-        // Затем устанавливаем активную таблицу
-        setActiveTableId(id);
+        setActiveTableId(id.toString());
     };
 
     const handleRetry = () => {
@@ -122,34 +118,38 @@ export default function Dashboard({theme, tables: initialTables}) {
             setLoading(true);
             const response = await axios.put(`/table`, {
                 name: name
+            }, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
             });
-
             if (response.status === 200) {
                 const newTableId = response.data.id;
 
-                // Сначала делаем все существующие таблицы неактивными
-                const updatedTables = Object.keys(tables).reduce((acc, key) => {
-                    acc[key] = {...tables[key], active: false};
-                    return acc;
-                }, {});
-
-                // Добавляем новую таблицу как активную
-                updatedTables[newTableId] = {
-                    name: name,
-                    active: true
-                };
-
-                // Атомарно обновляем оба состояния
-                setTables(updatedTables);
-                setActiveTableId(newTableId);
-
-                // Загружаем данные
-                await fetchTransactions(newTableId);
+                setTables(prevTables => {
+                    const updatedTables = {};
+                    Object.keys(prevTables).forEach(key => {
+                        updatedTables[key] = {
+                            ...prevTables[key],
+                            active: false
+                        };
+                    });
+                    updatedTables[newTableId] = {
+                        name: name,
+                        active: true,
+                        owner: true
+                    };
+                    return updatedTables;
+                });
+                setActiveTableId(newTableId.toString());
                 return true;
             }
         } catch (error) {
-            console.error('Error adding item:', error);
-            setError('Не удалось создать таблицу');
+            if (error.response && error.response.status === 422) {
+                setError('Таблица с таким именем уже существует');
+            } else {
+                setError('Не удалось создать таблицу');
+            }
             return false;
         } finally {
             setLoading(false);
@@ -169,7 +169,8 @@ export default function Dashboard({theme, tables: initialTables}) {
                 items={tables}
                 onItemClick={handleItemClick}
                 onAddItem={handleAddItem}
-                theme={theme} // Добавьте эту строку
+                theme={theme}
+                activeTableId={activeTableId}
             />
 
             {!hasTables ? (
@@ -183,7 +184,7 @@ export default function Dashboard({theme, tables: initialTables}) {
                     data={data.transactions}
                     activeTableId={activeTableId}
                     permissions={data.permission}
-                    theme={theme} // Добавьте эту строку
+                    theme={theme}
                 />
             )}
         </AuthenticatedLayout>

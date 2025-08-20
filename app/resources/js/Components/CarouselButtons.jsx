@@ -3,7 +3,7 @@ import axios from 'axios';
 import '../../css/CarouselButtons.css';
 import { Inertia } from '@inertiajs/inertia';
 
-const CarouselButtons = ({items = {}, onItemClick, onAddItem, theme}) => {
+const CarouselButtons = ({items = {}, onItemClick, onAddItem, theme, activeTableId}) => {
     const [isMobile, setIsMobile] = useState(false);
     const [showMobileMenu, setShowMobileMenu] = useState(false);
     const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -12,11 +12,28 @@ const CarouselButtons = ({items = {}, onItemClick, onAddItem, theme}) => {
     const [newItemName, setNewItemName] = useState('');
     const [errors, setErrors] = useState([]);
     const [showErrorModal, setShowErrorModal] = useState(false);
+    const [activeTab, setActiveTab] = useState('my');
     const containerRef = useRef(null);
     const itemsRef = useRef([]);
     const inputRef = useRef(null);
+    const itemsArray = Object.entries(items).map(([id, data]) => ({
+        id,
+        ...data,
+        active: id === activeTableId
+    }));
+    const ownedItems = itemsArray.filter(item => item.owner);
+    const sharedItems = itemsArray.filter(item => !item.owner);
 
-    const itemsArray = Object.entries(items).map(([id, data]) => ({id, ...data}));
+    const getCurrentItems = () => {
+        switch (activeTab) {
+            case 'my': return ownedItems;
+            case 'shared': return sharedItems;
+            case 'all': return itemsArray;
+            default: return ownedItems;
+        }
+    };
+
+    const currentItems = getCurrentItems();
 
     useEffect(() => {
         const handleResize = () => {
@@ -24,11 +41,10 @@ const CarouselButtons = ({items = {}, onItemClick, onAddItem, theme}) => {
             setIsMobile(mobile);
             checkScroll();
         };
-
         handleResize();
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
-    }, [items]);
+    }, [items, activeTableId]);
 
     useEffect(() => {
         if (isAdding && inputRef.current) {
@@ -38,7 +54,6 @@ const CarouselButtons = ({items = {}, onItemClick, onAddItem, theme}) => {
 
     const checkScroll = () => {
         if (!containerRef.current) return;
-
         const {scrollLeft, scrollWidth, clientWidth} = containerRef.current;
         setCanScrollLeft(scrollLeft > 0);
         setCanScrollRight(scrollLeft < scrollWidth - clientWidth);
@@ -46,21 +61,17 @@ const CarouselButtons = ({items = {}, onItemClick, onAddItem, theme}) => {
 
     const calculateScrollAmount = (direction) => {
         if (!containerRef.current || itemsRef.current.length === 0) return 0;
-
         const containerWidth = containerRef.current.clientWidth;
         const visibleWidth = containerWidth - 160;
         const scrollFraction = 0.75;
-
         let scrollAmount = 0;
         let targetScroll = 0;
         const currentScroll = containerRef.current.scrollLeft;
-
         if (direction === 'right') {
             for (let i = 0; i < itemsRef.current.length; i++) {
                 const item = itemsRef.current[i];
                 const itemRight = item.offsetLeft + item.offsetWidth;
                 const containerRight = currentScroll + visibleWidth;
-
                 if (itemRight > containerRight + 5) {
                     targetScroll = item.offsetLeft - 80;
                     scrollAmount = targetScroll - currentScroll;
@@ -72,7 +83,6 @@ const CarouselButtons = ({items = {}, onItemClick, onAddItem, theme}) => {
                 const item = itemsRef.current[i];
                 const itemLeft = item.offsetLeft;
                 const containerLeft = currentScroll - visibleWidth;
-
                 if (itemLeft < containerLeft - 5) {
                     targetScroll = item.offsetLeft - 80;
                     scrollAmount = targetScroll - currentScroll;
@@ -80,25 +90,17 @@ const CarouselButtons = ({items = {}, onItemClick, onAddItem, theme}) => {
                 }
             }
         }
-
         if (scrollAmount === 0) {
             scrollAmount = visibleWidth * scrollFraction * (direction === 'right' ? 1 : -1);
         }
-
         return scrollAmount;
     };
 
     const handleScroll = (direction) => {
         if (!containerRef.current) return;
-
         const scrollAmount = calculateScrollAmount(direction);
         const newScroll = containerRef.current.scrollLeft + scrollAmount;
-
-        containerRef.current.scrollTo({
-            left: newScroll,
-            behavior: 'smooth'
-        });
-
+        containerRef.current.scrollTo({ left: newScroll, behavior: 'smooth' });
         setTimeout(checkScroll, 300);
     };
 
@@ -118,13 +120,18 @@ const CarouselButtons = ({items = {}, onItemClick, onAddItem, theme}) => {
             setShowErrorModal(true);
             return;
         }
-
-        const success = await onAddItem(newItemName);
-        if (success) {
-            setIsAdding(false);
-            setNewItemName('');
-        } else {
-            setErrors(['Не удалось добавить элемент']);
+        try {
+            const success = await onAddItem(newItemName);
+            if (success) {
+                setIsAdding(false);
+                setNewItemName('');
+                setActiveTab('my');
+            } else {
+                setErrors(['Не удалось добавить элемент']);
+                setShowErrorModal(true);
+            }
+        } catch (error) {
+            setErrors(['Произошла ошибка при добавлении']);
             setShowErrorModal(true);
         }
     };
@@ -138,6 +145,53 @@ const CarouselButtons = ({items = {}, onItemClick, onAddItem, theme}) => {
         Inertia.visit('/tableControl');
     };
 
+    const handleItemClick = (itemId) => {
+        if (onItemClick && itemId !== activeTableId) {
+            onItemClick(itemId);
+        }
+    };
+
+    const renderTabs = () => (
+        <ul className={`nav nav-tabs ${theme === 'dark' ? 'dark' : ''}`}>
+            <li className="nav-item">
+                <button
+                    className={`nav-link ${activeTab === 'my' ? 'active' : ''} ${theme === 'dark' ? 'dark' : ''}`}
+                    onClick={() => setActiveTab('my')}
+                >
+                    Мои таблицы ({ownedItems.length})
+                </button>
+            </li>
+            <li className="nav-item">
+                <button
+                    className={`nav-link ${activeTab === 'shared' ? 'active' : ''} ${theme === 'dark' ? 'dark' : ''}`}
+                    onClick={() => setActiveTab('shared')}
+                >
+                    Доступные мне ({sharedItems.length})
+                </button>
+            </li>
+            <li className="nav-item">
+                <button
+                    className={`nav-link ${activeTab === 'all' ? 'active' : ''} ${theme === 'dark' ? 'dark' : ''}`}
+                    onClick={() => setActiveTab('all')}
+                >
+                    Все таблицы ({itemsArray.length})
+                </button>
+            </li>
+        </ul>
+    );
+
+    const renderMobileTabs = () => (
+        <select
+            className={`mobile-tabs-select ${theme === 'dark' ? 'dark' : ''}`}
+            value={activeTab}
+            onChange={(e) => setActiveTab(e.target.value)}
+        >
+            <option value="my">Мои таблицы ({ownedItems.length})</option>
+            <option value="shared">Доступные мне ({sharedItems.length})</option>
+            <option value="all">Все таблицы ({itemsArray.length})</option>
+        </select>
+    );
+
     return (
         <div className={`carousel-buttons ${isMobile ? 'mobile' : ''} ${theme === 'dark' ? 'dark-theme' : ''}`}>
             {isMobile ? (
@@ -148,52 +202,57 @@ const CarouselButtons = ({items = {}, onItemClick, onAddItem, theme}) => {
                     >
                         Мои таблицы ☰
                     </button>
-
                     {showMobileMenu && (
                         <div className={`mobile-menu ${theme === 'dark' ? 'dark' : ''}`}>
-                            {itemsArray.map((item) => (
-                                <button
-                                    key={item.id}
-                                    className={`carousel-item ${item.active ? 'active' : ''} ${theme === 'dark' ? 'dark' : ''}`}
-                                    onClick={!item.active ? () => onItemClick(item.id) : undefined}
-                                    disabled={item.active}
-                                >
-                                    {item.name}
-                                </button>
-                            ))}
-
-                            {isAdding ? (
-                                <div className={`add-item-form ${theme === 'dark' ? 'dark' : ''}`}>
-                                    <input
-                                        type="text"
-                                        value={newItemName}
-                                        onChange={(e) => setNewItemName(e.target.value)}
-                                        placeholder="Введите название"
-                                        ref={inputRef}
-                                        className={theme === 'dark' ? 'dark' : ''}
-                                    />
-                                    <div className="form-buttons">
-                                        <button
+                            {renderMobileTabs()}
+                            {currentItems.map((item, index) => {
+                                return (
+                                    <button
+                                        key={item.id}
+                                        ref={el => itemsRef.current[index] = el}
+                                        className={`carousel-item ${item.active ? 'active' : ''} ${theme === 'dark' ? 'dark' : ''}`}
+                                        onClick={() => handleItemClick(item.id)}
+                                        disabled={item.active}
+                                    >
+                                        {item.name}
+                                        {item.active && ' ✓'}
+                                    </button>
+                                );
+                            })}
+                            {activeTab === 'my' && (
+                                isAdding ? (
+                                    <div className={`add-item-form ${theme === 'dark' ? 'dark' : ''}`}>
+                                        <input
+                                            type="text"
+                                            value={newItemName}
+                                            onChange={(e) => setNewItemName(e.target.value)}
+                                            placeholder="Введите название"
+                                            ref={inputRef}
                                             className={theme === 'dark' ? 'dark' : ''}
-                                            onClick={handleSave}
-                                        >
-                                            Сохранить
-                                        </button>
-                                        <button
-                                            className={theme === 'dark' ? 'dark' : ''}
-                                            onClick={handleCancel}
-                                        >
-                                            Отмена
-                                        </button>
+                                        />
+                                        <div className="form-buttons">
+                                            <button
+                                                className={theme === 'dark' ? 'dark' : ''}
+                                                onClick={handleSave}
+                                            >
+                                                Сохранить
+                                            </button>
+                                            <button
+                                                className={theme === 'dark' ? 'dark' : ''}
+                                                onClick={handleCancel}
+                                            >
+                                                Отмена
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
-                            ) : (
-                                <button
-                                    className={`add-button ${theme === 'dark' ? 'dark' : ''}`}
-                                    onClick={handleAddClick}
-                                >
-                                    Добавить
-                                </button>
+                                ) : (
+                                    <button
+                                        className={`add-button ${theme === 'dark' ? 'dark' : ''}`}
+                                        onClick={handleAddClick}
+                                    >
+                                        Добавить таблицу
+                                    </button>
+                                )
                             )}
 
                             <button
@@ -207,81 +266,91 @@ const CarouselButtons = ({items = {}, onItemClick, onAddItem, theme}) => {
                 </>
             ) : (
                 <>
-                    <div className="carousel-container-wrapper">
-                        {(canScrollRight || canScrollLeft) && (
-                            <button
-                                className={`scroll-button left ${canScrollLeft ? '' : 'disabled'} ${theme === 'dark' ? 'dark' : ''}`}
-                                onClick={() => handleScroll('left')}
-                                disabled={!canScrollLeft}
-                            >
-                                &lt;&lt;
-                            </button>)}
+                    {renderTabs()}
 
-                        <div
-                            className={`carousel-container ${theme === 'dark' ? 'dark' : ''}`}
-                            ref={containerRef}
-                            onScroll={checkScroll}
-                        >
-                            <div className="carousel-content">
-                                {itemsArray.map((item, index) => (
-                                    <button
-                                        key={item.id}
-                                        ref={el => itemsRef.current[index] = el}
-                                        className={`carousel-item ${item.active ? 'active' : ''} ${theme === 'dark' ? 'dark' : ''}`}
-                                        onClick={!item.active ? () => onItemClick(item.id) : undefined}
-                                        disabled={item.active}
-                                    >
-                                        {item.name}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                        {(canScrollRight || canScrollLeft) && (
-                            <button
-                                className={`scroll-button right ${canScrollRight ? '' : 'disabled'} ${theme === 'dark' ? 'dark' : ''}`}
-                                onClick={() => handleScroll('right')}
-                                disabled={!canScrollRight}
-                            >
-                                &gt;&gt;
-                            </button>)}
-                    </div>
+                    <div className="desktop-content-wrapper">
+                        <div className="carousel-container-wrapper">
+                            {(canScrollRight || canScrollLeft) && (
+                                <button
+                                    className={`scroll-button left ${canScrollLeft ? '' : 'disabled'} ${theme === 'dark' ? 'dark' : ''}`}
+                                    onClick={() => handleScroll('left')}
+                                    disabled={!canScrollLeft}
+                                >
+                                    &lt;&lt;
+                                </button>
+                            )}
 
-                    <div className={`add-button-container ${theme === 'dark' ? 'dark' : ''}`}>
-                        {isAdding ? (
-                            <div className={`add-item-form ${theme === 'dark' ? 'dark' : ''}`}>
-                                <input
-                                    type="text"
-                                    value={newItemName}
-                                    onChange={(e) => setNewItemName(e.target.value)}
-                                    placeholder="Введите название"
-                                    ref={inputRef}
-                                    className={theme === 'dark' ? 'dark' : ''}
-                                />
-                                <div className="form-buttons">
-                                    <button
-                                        className={theme === 'dark' ? 'dark' : ''}
-                                        onClick={handleSave}
-                                    >
-                                        Сохранить
-                                    </button>
-                                    <button
-                                        className={theme === 'dark' ? 'dark' : ''}
-                                        onClick={handleCancel}
-                                    >
-                                        Отмена
-                                    </button>
+                            <div
+                                className={`carousel-container ${theme === 'dark' ? 'dark' : ''}`}
+                                ref={containerRef}
+                                onScroll={checkScroll}
+                            >
+                                <div className="carousel-content">
+                                    {currentItems.map((item, index) => {
+                                        return (
+                                            <button
+                                                key={item.id}
+                                                ref={el => itemsRef.current[index] = el}
+                                                className={`carousel-item ${item.active ? 'active' : ''} ${theme === 'dark' ? 'dark' : ''}`}
+                                                onClick={() => handleItemClick(item.id)}
+                                                disabled={item.active}
+                                            >
+                                                {item.name}
+                                                {item.active && ' ✓'}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
-                        ) : (
-                            <button
-                                className={`add-button ${theme === 'dark' ? 'dark' : ''}`}
-                                onClick={handleAddClick}
-                            >
-                                Добавить
-                            </button>
+
+                            {(canScrollRight || canScrollLeft) && (
+                                <button
+                                    className={`scroll-button right ${canScrollRight ? '' : 'disabled'} ${theme === 'dark' ? 'dark' : ''}`}
+                                    onClick={() => handleScroll('right')}
+                                    disabled={!canScrollRight}
+                                >
+                                    &gt;&gt;
+                                </button>
+                            )}
+                        </div>
+                        {activeTab === 'my' && (
+                            <div className={`add-button-container ${theme === 'dark' ? 'dark' : ''}`}>
+                                {isAdding ? (
+                                    <div className={`add-item-form ${theme === 'dark' ? 'dark' : ''}`}>
+                                        <input
+                                            type="text"
+                                            value={newItemName}
+                                            onChange={(e) => setNewItemName(e.target.value)}
+                                            placeholder="Введите название"
+                                            ref={inputRef}
+                                            className={theme === 'dark' ? 'dark' : ''}
+                                        />
+                                        <div className="form-buttons">
+                                            <button
+                                                className={theme === 'dark' ? 'dark' : ''}
+                                                onClick={handleSave}
+                                            >
+                                                Сохранить
+                                            </button>
+                                            <button
+                                                className={theme === 'dark' ? 'dark' : ''}
+                                                onClick={handleCancel}
+                                            >
+                                                Отмена
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <button
+                                        className={`add-button ${theme === 'dark' ? 'dark' : ''}`}
+                                        onClick={handleAddClick}
+                                    >
+                                        Добавить
+                                    </button>
+                                )}
+                            </div>
                         )}
                     </div>
-
                     {showErrorModal && (
                         <div className={`error-modal ${theme === 'dark' ? 'dark' : ''}`}>
                             <div className={`error-modal-content ${theme === 'dark' ? 'dark' : ''}`}>

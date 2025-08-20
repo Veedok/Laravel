@@ -11,6 +11,7 @@ use App\Services\TableService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Response;
+use JsonException;
 
 /** Контроллер для работы с таблицами */
 readonly class TablesController
@@ -50,13 +51,14 @@ readonly class TablesController
      * Создание новой таблицы
      * @param NewTableDTO $request
      * @return JsonResponse
+     * @throws JsonException
      */
     public function newTable(NewTableDTO $request): JsonResponse
     {
         return response()->json($this->tableService->newTable($request));
     }
 
-    public function getTablePage()
+    public function getTablePage(): Response
     {
         return $this->tableService->getTableControl();
     }

@@ -18,7 +18,6 @@ export default function TableUserManager({ tableId, permissions, theme }) {
             const response = await axios.post(route('tableUsers', { id: tableId }));
             setUsers(response.data);
         } catch (err) {
-            console.error('Failed to fetch users:', err);
             setError('Не удалось загрузить список пользователей');
         } finally {
             setIsLoading(false);
@@ -50,7 +49,6 @@ export default function TableUserManager({ tableId, permissions, theme }) {
                 return user;
             }));
         } catch (err) {
-            console.error('Failed to update permissions:', err);
             setError('Не удалось обновить права доступа');
         }
     };
@@ -70,7 +68,6 @@ export default function TableUserManager({ tableId, permissions, theme }) {
             setUsers(prev => prev.filter(user => user.id !== userToDelete.id));
             setDeleteModalOpen(false);
         } catch (err) {
-            console.error('Failed to remove user:', err);
             setError('Не удалось удалить пользователя');
         } finally {
             setUserToDelete(null);

@@ -105,13 +105,12 @@ export default function Register() {
                 <div className="mt-4 flex items-center justify-end">
                     <Link
                         href={route('login')}
-                        className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                        className="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 ms-4"
                     >
-                        Already registered?
+                       Страница входа
                     </Link>
-
                     <PrimaryButton className="ms-4" disabled={processing} type={'submit'}>
-                        Register
+                        Зарегистрироваться
                     </PrimaryButton>
                 </div>
             </form>

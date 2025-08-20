@@ -50,7 +50,6 @@ export default function TableManager({theme, tables, permissions, userRights}) {
             setEmailSuggestions(response.data);
             setShowSuggestions(true);
         } catch (error) {
-            console.error('Error fetching email suggestions:', error);
             setEmailSuggestions([]);
         }
     };
@@ -126,7 +125,6 @@ export default function TableManager({theme, tables, permissions, userRights}) {
             } else {
                 setEditError('Не удалось выполнить обновление. Проверьте соединение.');
             }
-            console.error('Update error:', error);
 
             setIsShaking(true);
             setTimeout(() => setIsShaking(false), 500);
@@ -183,7 +181,6 @@ export default function TableManager({theme, tables, permissions, userRights}) {
             } else {
                 showError('Не удалось предоставить доступ. Проверьте соединение.');
             }
-            console.error('Share error:', error);
         } finally {
             setIsSharing(false);
         }
@@ -209,7 +206,6 @@ export default function TableManager({theme, tables, permissions, userRights}) {
             } else {
                 showError('Не удалось выполнить удаление. Проверьте соединение.');
             }
-            console.error('Delete error:', error);
         } finally {
             setDeleteModalOpen(false);
             setCurrentTable(null);

@@ -24,8 +24,8 @@
     display: flex;
     overflow-x: auto;
     scroll-behavior: smooth;
-    width: calc(100% - 160px); /* Учитываем увеличенные margin */
-    margin: 0 80px; /* Увеличенные отступы для стрелок */
+    width: calc(100% - 160px);
+    margin: 0 80px;
     gap: 10px;
     padding: 10px 0;
     scrollbar-width: none;
@@ -45,24 +45,33 @@
 
 .carousel-item {
     flex: 0 0 auto;
-    padding: 10px 20px;
+    padding: 12px 24px;
     background: #ffffff;
-    border: 1px solid #ddd;
-    border-radius: 20px;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
     cursor: pointer;
     white-space: nowrap;
-    transition: all 0.3s;
+    transition: all 0.3s ease;
     box-sizing: border-box;
+    font-weight: 500;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .carousel-item:hover:not(.active) {
-    background: #e0e0e0;
+    background: #f8fafc;
+    border-color: #d1d5db;
+    transform: translateY(-1px);
 }
 
 .carousel-item.active {
-    background: #8098dd;
+    background: #3b82f6;
     color: white;
+    border-color: #3b82f6;
     cursor: default;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .add-button-container {
@@ -75,23 +84,31 @@
 .add-button {
     width: 100%;
     height: 50px;
-    background: #4470e4;;
+    background: #3b82f6;
     color: white;
     border: none;
-    border-radius: 5px;
+    border-radius: 8px;
     cursor: pointer;
     font-size: 16px;
+    font-weight: 600;
     white-space: nowrap;
+    transition: all 0.3s ease;
+}
+
+.add-button:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .scroll-button {
     position: absolute;
     z-index: 1;
-    background: #f5f5f5;
-    color: #333;
-    border: none;
-    width: 40px;
-    height: 40px;
+    background: #ffffff;
+    color: #374151;
+    border: 2px solid #e5e7eb;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     cursor: pointer;
     display: flex;
@@ -99,102 +116,375 @@
     justify-content: center;
     font-size: 18px;
     font-weight: bold;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    transition: all 0.3s;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
 }
 
 .scroll-button:hover:not(.disabled) {
-    background: #e0e0e0;
+    background: #f8fafc;
+    border-color: #d1d5db;
+    transform: scale(1.05);
 }
 
 .scroll-button.disabled {
-    opacity: 0.3;
+    opacity: 0.4;
     cursor: not-allowed;
 }
 
 .scroll-button.left {
-    left: 10px;
+    left: 15px;
 }
 
 .scroll-button.right {
-    right: 10px;
+    right: 15px;
 }
 
-/* Мобильная версия */
 @media (max-width: 768px) {
     .carousel-buttons {
         height: auto;
         flex-direction: column;
-        padding: 10px;
+        padding: 0;
+        margin: 0 auto;
+        max-width: 100%;
+        align-items: center;
+        display: flex;
+        justify-content: center;
     }
 
     .mobile-menu-toggle {
-        width: 50%;
-        padding: 10px;
-        background: #4470e4;
+        width: auto;
+        min-width: 200px;
+        padding: 12px 20px;
+        background: #3b82f6;
         color: #fff;
         border: none;
-        border-radius: 5px;
-        margin-bottom: 10px;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin: 8px auto; /* Центрирование */
+    }
+
+    .mobile-menu-toggle:hover {
+        background: #2563eb;
+        transform: translateY(-1px);
+    }
+
+    .mobile-menu-toggle::after {
+        content: '☰';
+        font-size: 16px;
+    }
+
+    .mobile-menu-toggle.open::after {
+        content: '✕';
     }
 
     .mobile-menu {
-        width: 100%;
+        width: 90%;
+        max-width: 400px;
         display: flex;
         flex-direction: column;
-        gap: 5px;
+        gap: 12px;
+        padding: 20px;
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        margin: 8px auto;
+        animation: slideDown 0.3s ease;
+        border: 1px solid #e5e7eb;
+    }
+
+    .mobile-menu.closing {
+        animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px) scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    @keyframes slideUp {
+        from {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+        to {
+            opacity: 0;
+            transform: translateY(-10px) scale(0.95);
+        }
     }
 
     .carousel-item {
         width: 100%;
         text-align: center;
+        padding: 14px;
+        font-size: 15px;
+        border-radius: 10px;
+        margin-bottom: 6px;
     }
 
     .add-button-container {
         width: 100%;
         padding-left: 0;
-        margin-top: 10px;
+        margin-top: 12px;
     }
 
     .carousel-container-wrapper,
     .scroll-button {
         display: none;
     }
+
+    /* Мобильные табы */
+    .mobile-tabs-container {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 16px;
+        overflow-x: auto;
+        padding-bottom: 6px;
+        scrollbar-width: none;
+        justify-content: center;
+    }
+
+    .mobile-tabs-container::-webkit-scrollbar {
+        display: none;
+    }
+
+    .mobile-tab {
+        flex: 0 0 auto;
+        padding: 10px 16px;
+        background: #f8fafc;
+        border: 2px solid #e5e7eb;
+        border-radius: 20px;
+        cursor: pointer;
+        font-weight: 500;
+        font-size: 14px;
+        white-space: nowrap;
+        transition: all 0.3s ease;
+    }
+
+    .mobile-tab.active {
+        background: #3b82f6;
+        color: white;
+        border-color: #3b82f6;
+    }
+
+    .mobile-tab:not(.active):hover {
+        background: #e5e7eb;
+    }
+
+    /* Кнопка управления таблицами */
+    .manage-tables-button {
+        width: 100%;
+        padding: 14px;
+        background: #4b5563;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 15px;
+        font-weight: 600;
+        margin-top: 16px;
+        transition: all 0.3s ease;
+    }
+
+    .manage-tables-button:hover {
+        background: #374151;
+        transform: translateY(-1px);
+    }
+
+    /* Форма добавления для мобильной версии */
+    .mobile-add-form {
+        background: #f8fafc;
+        padding: 16px;
+        border-radius: 10px;
+        margin: 12px 0;
+        border: 2px solid #e5e7eb;
+    }
+
+    /* Контейнер для элементов карусели */
+    .carousel-items-container {
+        max-height: 300px;
+        overflow-y: auto;
+        padding-right: 4px;
+        margin-bottom: 12px;
+    }
+
+    .carousel-items-container::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .carousel-items-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 2px;
+    }
+
+    .carousel-items-container::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 2px;
+    }
+
+    .carousel-items-container::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+    }
 }
+
+/* Форма добавления */
 .add-item-form {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
     margin-top: 10px;
 }
 
 .add-item-form input {
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    padding: 12px 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.add-item-form input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .form-buttons {
     display: flex;
-    gap: 10px;
+    gap: 12px;
 }
 
 .form-buttons button {
     flex: 1;
-    padding: 8px;
+    padding: 12px;
     border: none;
-    border-radius: 4px;
+    border-radius: 8px;
     cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
 }
 
 .form-buttons button:first-child {
-    background-color: #4CAF50;
+    background-color: #10b981;
     color: white;
 }
 
+.form-buttons button:first-child:hover {
+    background-color: #059669;
+    transform: translateY(-1px);
+}
+
 .form-buttons button:last-child {
-    background-color: #f44336;
+    background-color: #ef4444;
     color: white;
+}
+
+.form-buttons button:last-child:hover {
+    background-color: #dc2626;
+    transform: translateY(-1px);
+}
+
+/* Темная тема - обновленная */
+.carousel-buttons.dark-theme {
+    color: #e5e7eb;
+}
+
+.carousel-buttons.dark-theme .carousel-item.dark {
+    background-color: #374151;
+    color: #e5e7eb;
+    border: 2px solid #4b5563;
+}
+
+.carousel-buttons.dark-theme .carousel-item.dark.active {
+    background-color: #1e40af;
+    border-color: #1e40af;
+    box-shadow: 0 4px 12px rgba(30, 64, 175, 0.3);
+}
+
+.carousel-buttons.dark-theme .carousel-item.dark:hover:not(.active) {
+    background-color: #4b5563;
+    border-color: #6b7280;
+}
+
+.carousel-buttons.dark-theme .add-button.dark {
+    background-color: #1e40af;
+}
+
+.carousel-buttons.dark-theme .add-button.dark:hover {
+    background-color: #1e3a8a;
+}
+
+@media (max-width: 768px) {
+    .carousel-buttons.dark-theme .mobile-menu {
+        background-color: #1f2937;
+        border-color: #374151;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    .carousel-buttons.dark-theme .mobile-menu-toggle.dark {
+        background-color: #1e40af;
+    }
+
+    .carousel-buttons.dark-theme .mobile-menu-toggle.dark:hover {
+        background-color: #1e3a8a;
+    }
+
+    .carousel-buttons.dark-theme .mobile-menu-toggle.open.dark {
+        background-color: #1e3a8a;
+        margin: 8px auto; /* Центрирование в темной теме */
+    }
+
+    /* Исправление для mobile-tab в темной теме */
+    .carousel-buttons.dark-theme .mobile-tab.dark {
+        background: #374151;
+        border-color: #4b5563;
+        color: #e5e7eb;
+    }
+
+    .carousel-buttons.dark-theme .mobile-tab.dark.active {
+        background: #1e40af;
+        border-color: #1e40af;
+        color: white;
+    }
+
+    .carousel-buttons.dark-theme .mobile-tab.dark:not(.active):hover {
+        background: #4b5563;
+    }
+
+    /* Исправление для mobile-add-form в темной теме */
+    .carousel-buttons.dark-theme .mobile-add-form.dark {
+        background: #374151;
+        border-color: #4b5563;
+    }
+
+    .carousel-buttons.dark-theme .carousel-items-container::-webkit-scrollbar-track {
+        background: #374151;
+    }
+
+    .carousel-buttons.dark-theme .carousel-items-container::-webkit-scrollbar-thumb {
+        background: #6b7280;
+    }
+
+    .carousel-buttons.dark-theme .carousel-items-container::-webkit-scrollbar-thumb:hover {
+        background: #9ca3af;
+    }
+
+    /* Центрирование кнопки в темной теме */
+    .carousel-buttons.dark-theme .mobile-menu-toggle.dark {
+        margin: 8px auto;
+    }
 }
 
 .error-modal {
@@ -289,12 +579,6 @@
 
 .carousel-buttons.dark-theme .add-button.dark:hover {
     background-color: #1e3a8a;
-}
-
-/* Форма добавления */
-.carousel-buttons.dark-theme .add-item-form.dark {
-    background-color: #374151;
-    border: 1px solid #4b5563;
 }
 
 .carousel-buttons.dark-theme .add-item-form.dark input.dark {

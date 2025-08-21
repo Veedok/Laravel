@@ -187,13 +187,12 @@ const CarouselButtons = ({ items = {}, onItemClick, onAddItem, theme, activeTabl
     );
 
     const renderMobileView = () => (
-        <>
+        <div className="mobile-view-container">
             <button
-                className={`mobile-menu-toggle ${theme === 'dark' ? 'dark' : ''}`}
+                className={`mobile-menu-toggle ${showMobileMenu ? 'open' : ''} ${theme === 'dark' ? 'dark' : ''}`}
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
             >
-                Мои таблицы ☰
-            </button>
+                Таблицы</button>
 
             {showMobileMenu && (
                 <div className={`mobile-menu ${theme === 'dark' ? 'dark' : ''}`}>
@@ -208,48 +207,58 @@ const CarouselButtons = ({ items = {}, onItemClick, onAddItem, theme, activeTabl
                         theme={theme}
                     />
 
-                    {currentItems.map((item, index) => (
-                        <CarouselItem
-                            key={item.id}
-                            item={{
-                                ...item,
-                                ref: el => itemsRef.current[index] = el
-                            }}
-                            isActive={item.active}
-                            onClick={handleItemClick}
-                            theme={theme}
-                        />
-                    ))}
+                    <div className="carousel-items-container">
+                        {currentItems.map((item, index) => (
+                            <CarouselItem
+                                key={item.id}
+                                item={{
+                                    ...item,
+                                    ref: el => itemsRef.current[index] = el
+                                }}
+                                isActive={item.active}
+                                onClick={handleItemClick}
+                                theme={theme}
+                            />
+                        ))}
+                    </div>
 
                     {activeTab === 'my' && (
-                        <AddItemForm
-                            isAdding={isAdding}
-                            newItemName={newItemName}
-                            onNameChange={setNewItemName}
-                            onSave={handleSave}
-                            onCancel={handleCancel}
-                            theme={theme}
-                        />
-                    )}
+                        <div className={`mobile-add-form ${theme === 'dark' ? 'dark' : ''}`}>
+                            <AddItemForm
+                                isAdding={isAdding}
+                                newItemName={newItemName}
+                                onNameChange={setNewItemName}
+                                onSave={handleSave}
+                                onCancel={handleCancel}
+                                theme={theme}
+                                placeholder="Название таблицы"
+                            />
 
-                    {activeTab === 'my' && !isAdding && (
-                        <button
-                            className={`add-button ${theme === 'dark' ? 'dark' : ''}`}
-                            onClick={handleAddClick}
-                        >
-                            Добавить таблицу
-                        </button>
+                            {!isAdding && (
+                                <button
+                                    className={`add-button ${theme === 'dark' ? 'dark' : ''}`}
+                                    onClick={handleAddClick}
+                                    style={{
+                                        marginTop: '12px',
+                                        padding: '12px',
+                                        fontSize: '14px'
+                                    }}
+                                >
+                                    ＋ Добавить
+                                </button>
+                            )}
+                        </div>
                     )}
 
                     <button
                         className={`manage-tables-button ${theme === 'dark' ? 'dark' : ''}`}
                         onClick={handleManageTables}
                     >
-                        Управление таблицами
+                        📊 Управление
                     </button>
                 </div>
             )}
-        </>
+        </div>
     );
 
     return (

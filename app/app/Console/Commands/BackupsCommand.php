@@ -39,14 +39,12 @@ class BackupsCommand extends Command
         $process->setTimeout(300);
         try {
             $process->mustRun();
-            $this->info('Database backup created successfully: ' . $backupFileName);
             $telegram = new Telegram();
-            $result = $telegram->sendFile(
+            logger()?->channel('backup')->info($telegram->sendFile(
                 env('TELEGRAM_CHAT_ID'),
                 $backupPath,
                 "Бэкап БД от ".now()->format('d.m.Y')
-            );
-            $this->info(implode(' | ', $result));
+            ));
         } catch (ProcessFailedException|GuzzleException $exception) {
             $this->error('Backup failed: ' . $exception->getMessage());
         }

@@ -57,7 +57,11 @@ return [
             'channels' => explode(',', (string) env('LOG_STACK', 'single')),
             'ignore_exceptions' => false,
         ],
-
+        'backup' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/backup.log'),
+            'level' => 'info',
+        ],
         'single' => [
             'driver' => 'single',
             'path' => storage_path('logs/laravel.log'),

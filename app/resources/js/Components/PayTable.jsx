@@ -1,6 +1,14 @@
+// TransactionsTable.jsx
 import React, { useState } from 'react';
 import axios from 'axios';
 import '../../css/payTable.css';
+import ToastNotification from './common/ToastNotification.jsx';
+import TotalsSummary from './PayTable/TotalsSummary.jsx';
+import DesktopTableRow from './PayTable/DesktopTableRow.jsx';
+import MobileTransactionCard from './PayTable/MobileTransactionCard.jsx';
+import ConfirmModal from "@/Components/common/ConfirmModal.jsx";
+import TransactionFormModal from "@/Components/PayTable/TransactionFormModal.jsx";
+import AddTransactionButton from "@/Components/PayTable/AddTransactionButton.jsx";
 
 const TransactionsTable = ({ data, activeTableId, permissions, theme }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -9,6 +17,7 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme }) => {
     const [successMessage, setSuccessMessage] = useState(null);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [formData, setFormData] = useState({
         id: null,
         title: '',
@@ -21,7 +30,6 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme }) => {
 
     const showSuccess = (message) => {
         setSuccessMessage(message);
-        setTimeout(() => setSuccessMessage(null), 3000);
     };
 
     const handleSubmit = async (e) => {
@@ -92,19 +100,18 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme }) => {
     };
 
     const handleConfirmDelete = async () => {
-        if (!itemToDelete || deleteModalOpen === false) {
-            setItemToDelete(null);
-            return;
-        }
+        if (!itemToDelete) return;
 
+        setIsDeleting(true);
         try {
-            const deletingId = itemToDelete;
             await axios.delete(route('deleteData'), {
-                data: { id: deletingId }
+                data: { id: itemToDelete }
             });
 
-            setTransactions(prev => prev.filter(t => t.id !== deletingId));
+            setTransactions(prev => prev.filter(t => t.id !== itemToDelete));
             showSuccess('Запись успешно удалена');
+            setDeleteModalOpen(false);
+            setItemToDelete(null);
         } catch (error) {
             if (error.response?.status === 404) {
                 showSuccess('Запись уже была удалена');
@@ -115,8 +122,7 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme }) => {
                 );
             }
         } finally {
-            setDeleteModalOpen(false);
-            setItemToDelete(null);
+            setIsDeleting(false);
         }
     };
 
@@ -162,39 +168,27 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme }) => {
         });
     };
 
-
     return (
         <div className={`space-y-6 table_container ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
 
-            {/* Уведомление об успехе */}
             {successMessage && (
-                <div className={`fixed top-4 right-4 px-4 py-2 rounded-md shadow-lg z-50 ${
-                    theme === 'dark' ? 'bg-green-700 text-white' : 'bg-green-500 text-white'
-                }`}>
-                    {successMessage}
-                </div>
+                <ToastNotification
+                    message={successMessage}
+                    type="success"
+                    theme={theme}
+                    onClose={() => setSuccessMessage(null)}
+                    autoClose={true}
+                    autoCloseDuration={3000}
+                />
             )}
 
-            {/* Суммарные показатели */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className={`p-4 rounded-lg border ${
-                    theme === 'dark'
-                        ? 'bg-gray-700 border-gray-600 text-green-300'
-                        : 'bg-green-50 border-green-100 text-green-800'
-                }`}>
-                    <h3 className="text-sm font-medium">Суммарный приход</h3>
-                    <p className="text-2xl font-semibold">{formatCurrency(totals.income)}</p>
-                </div>
+            <TotalsSummary
+                totals={totals}
+                theme={theme}
+                formatCurrency={formatCurrency}
+            />
 
-                <div className={`p-4 rounded-lg border ${
-                    theme === 'dark'
-                        ? 'bg-gray-700 border-gray-600 text-red-300'
-                        : 'bg-red-50 border-red-100 text-red-800'
-                }`}>
-                    <h3 className="text-sm font-medium">Суммарный расход</h3>
-                    <p className="text-2xl font-semibold">{formatCurrency(totals.expense)}</p>
-                </div>
-            </div>
+            {/* Десктопная таблица */}
             <div className="hidden md:block">
                 <table className="min-w-full divide-y">
                     <thead className={theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'}>
@@ -210,284 +204,61 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme }) => {
                         theme === 'dark' ? 'bg-gray-800 divide-gray-700' : 'bg-white divide-gray-200'
                     }`}>
                     {transactions.map((item) => (
-                        <tr key={item.id}>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{item.title}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                        item.changeBalance
-                                            ? theme === 'dark' ? 'bg-green-900 text-green-300' : 'bg-green-100 text-green-800'
-                                            : theme === 'dark' ? 'bg-red-900 text-red-300' : 'bg-red-100 text-red-800'
-                                    }`}>
-                                        {item.changeBalance ? 'Приход' : 'Расход'}
-                                    </span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm">{formatCurrency(item.sum)}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm">{item.date}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                <div className="flex space-x-2 action_row">
-                                    {(permissions.is_owner || permissions.permissions.includes('editTransactions')) && (
-                                        <button onClick={() => handleEdit(item)} className="text-indigo-600 hover:text-indigo-900" title="Редактировать">
-                                            ✏️
-                                        </button>
-                                    )}
-                                    {(permissions.is_owner || permissions.permissions.includes('deleteTransactions')) && (
-                                        <button onClick={() => handleDeleteClick(item.id)} className="text-red-600 hover:text-red-900" title="Удалить">
-                                            🗑️
-                                        </button>
-                                    )}
-                                </div>
-                            </td>
-                        </tr>
+                        <DesktopTableRow
+                            key={item.id}
+                            item={item}
+                            theme={theme}
+                            formatCurrency={formatCurrency}
+                            onEdit={handleEdit}
+                            onDelete={handleDeleteClick}
+                            permissions={permissions}
+                        />
                     ))}
                     </tbody>
                 </table>
             </div>
 
-            {/* Мобильные карточки (показаны только на мобильных) */}
+            {/* Мобильные карточки */}
             <div className="md:hidden space-y-3">
                 {transactions.map((item) => (
-                    <div key={item.id} className={`p-4 rounded-lg border ${
-                        theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'
-                    }`}>
-                        <div className="flex justify-between items-start mb-3">
-                            <h3 className="font-semibold text-lg">{item.title}</h3>
-                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                                item.changeBalance
-                                    ? theme === 'dark' ? 'bg-green-900 text-green-300' : 'bg-green-100 text-green-800'
-                                    : theme === 'dark' ? 'bg-red-900 text-red-300' : 'bg-red-100 text-red-800'
-                            }`}>
-                                {item.changeBalance ? 'Приход' : 'Расход'}
-                            </span>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4 text-sm mb-3">
-                            <div>
-                                <span className="text-gray-500">Сумма:</span>
-                                <p className="font-medium">{formatCurrency(item.sum)}</p>
-                            </div>
-                            <div>
-                                <span className="text-gray-500">Дата:</span>
-                                <p className="font-medium">{item.date}</p>
-                            </div>
-                        </div>
-
-                        {(permissions.is_owner || permissions.permissions.includes('editTransactions') || permissions.permissions.includes('deleteTransactions')) && (
-                            <div className="flex space-x-3 pt-3 border-t border-gray-200 dark:border-gray-600">
-                                {(permissions.is_owner || permissions.permissions.includes('editTransactions')) && (
-                                    <button
-                                        onClick={() => handleEdit(item)}
-                                        className={`flex-1 py-2 px-3 rounded-md text-center ${
-                                            theme === 'dark'
-                                                ? 'bg-indigo-700 text-white hover:bg-indigo-600'
-                                                : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
-                                        }`}
-                                    >
-                                        ✏️ Изменить
-                                    </button>
-                                )}
-                                {(permissions.is_owner || permissions.permissions.includes('deleteTransactions')) && (
-                                    <button
-                                        onClick={() => handleDeleteClick(item.id)}
-                                        className={`flex-1 py-2 px-3 rounded-md text-center ${
-                                            theme === 'dark'
-                                                ? 'bg-red-700 text-white hover:bg-red-600'
-                                                : 'bg-red-100 text-red-700 hover:bg-red-200'
-                                        }`}
-                                    >
-                                        🗑️ Удалить
-                                    </button>
-                                )}
-                            </div>
-                        )}
-                    </div>
+                    <MobileTransactionCard
+                        key={item.id}
+                        item={item}
+                        theme={theme}
+                        formatCurrency={formatCurrency}
+                        onEdit={handleEdit}
+                        onDelete={handleDeleteClick}
+                        permissions={permissions}
+                    />
                 ))}
             </div>
 
-            {/* Кнопка добавления */}
-            {(permissions.is_owner || permissions.permissions.includes('addTransaction')) && (
-                <div className="flex justify-end">
-                    <button
-                        onClick={() => setIsModalOpen(true)}
-                        className={`px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors ${
-                            theme === 'dark'
-                                ? 'bg-blue-700 text-white hover:bg-blue-600'
-                                : 'bg-blue-600 text-white hover:bg-blue-700'
-                        }`}
-                    >
-                        + Добавить запись
-                    </button>
-                </div>
-            )}
-            {/* Модальное окно */}
-            {deleteModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                    <div className={`rounded-lg shadow-xl w-full max-w-md ${
-                        theme === 'dark' ? 'bg-gray-800' : 'bg-white'
-                    }`}>
-                        <div className="p-6">
-                            <h2 className={`text-xl font-semibold mb-4 ${
-                                theme === 'dark' ? 'text-gray-100' : 'text-gray-900'
-                            }`}>
-                                Подтверждение удаления
-                            </h2>
-                            <p className={`mb-6 ${
-                                theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-                            }`}>
-                                Вы уверены, что хотите удалить эту запись? Это действие нельзя отменить.
-                            </p>
+            <AddTransactionButton
+                onClick={() => setIsModalOpen(true)}
+                theme={theme}
+                permissions={permissions}
+            />
 
-                            <div className="flex justify-end space-x-3">
-                                <button
-                                    onClick={handleCancelDelete}
-                                    className={`px-4 py-2 rounded-md ${
-                                        theme === 'dark'
-                                            ? 'bg-gray-700 text-gray-100 hover:bg-gray-600'
-                                            : 'text-gray-700 border border-gray-300 hover:bg-gray-50'
-                                    }`}
-                                >
-                                    Нет, отменить
-                                </button>
-                                <button
-                                    onClick={handleConfirmDelete}
-                                    className={`px-4 py-2 text-white rounded-md hover:bg-red-700 transition-colors ${
-                                        theme === 'dark' ? 'bg-red-700' : 'bg-red-600'
-                                    }`}
-                                >
-                                    Да, удалить
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-            {isModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                    <div
-                        className={`rounded-lg shadow-xl w-full max-w-md ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
-                        <div className="p-6">
-                            <h2 className={`text-xl font-semibold mb-4 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
-                                {editingId ? 'Редактировать запись' : 'Добавить запись'}
-                            </h2>
+            <ConfirmModal
+                isOpen={deleteModalOpen}
+                onClose={handleCancelDelete}
+                onConfirm={handleConfirmDelete}
+                title="Подтверждение удаления"
+                message="Вы уверены, что хотите удалить эту запись? Это действие нельзя отменить."
+                theme={theme}
+                isProcessing={isDeleting}
+            />
 
-                            {errorMessage && (
-                                <div className={`mb-4 p-3 rounded-md ${
-                                    theme === 'dark'
-                                        ? 'bg-red-900 text-red-100'
-                                        : 'bg-red-100 text-red-700'
-                                }`}>
-                                    <ul className="list-disc pl-5">
-                                        {errorMessage.split('\n').map((line, index) => (
-                                            <li key={index}>{line}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
-
-                            <form onSubmit={handleSubmit}>
-                                <div className="mb-4">
-                                    <label className={`block text-sm font-medium mb-1 ${
-                                        theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-                                    }`}>
-                                        Название
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className={`w-full px-3 py-2 border rounded-md ${
-                                            theme === 'dark'
-                                                ? 'bg-gray-700 border-gray-600 text-white'
-                                                : 'border-gray-300'
-                                        }`}
-                                        value={formData.title}
-                                        onChange={(e) => handleInputChange('title', e.target.value)}
-                                        required
-                                    />
-                                </div>
-
-                                <div className="mb-4">
-                                    <label className={`block text-sm font-medium mb-1 ${
-                                        theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-                                    }`}>
-                                        Тип операции
-                                    </label>
-                                    <select
-                                        className={`w-full px-3 py-2 border rounded-md ${
-                                            theme === 'dark'
-                                                ? 'bg-gray-700 border-gray-600 text-white'
-                                                : 'border-gray-300'
-                                        }`}
-                                        value={formData.changeBalance}
-                                        onChange={(e) => handleInputChange('changeBalance', e.target.value === 'true')}
-                                        required
-                                    >
-                                        <option value={true}>Приход</option>
-                                        <option value={false}>Расход</option>
-                                    </select>
-                                </div>
-
-                                <div className="mb-4">
-                                    <label className={`block text-sm font-medium mb-1 ${
-                                        theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-                                    }`}>
-                                        Сумма
-                                    </label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        className={`w-full px-3 py-2 border rounded-md ${
-                                            theme === 'dark'
-                                                ? 'bg-gray-700 border-gray-600 text-white'
-                                                : 'border-gray-300'
-                                        }`}
-                                        value={formData.sum}
-                                        onChange={(e) => handleInputChange('sum', e.target.value)}
-                                        required
-                                    />
-                                </div>
-
-                                <div className="mb-4">
-                                    <label className={`block text-sm font-medium mb-1 ${
-                                        theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-                                    }`}>
-                                        Дата
-                                    </label>
-                                    <input
-                                        type="date"
-                                        className={`w-full px-3 py-2 border rounded-md ${
-                                            theme === 'dark'
-                                                ? 'bg-gray-700 border-gray-600 text-white'
-                                                : 'border-gray-300'
-                                        }`}
-                                        value={formData.date}
-                                        onChange={(e) => handleInputChange('date', e.target.value)}
-                                        required
-                                    />
-                                </div>
-                                <div className="flex justify-end space-x-3">
-                                    <button
-                                        type="button"
-                                        onClick={resetForm}
-                                        className={`px-4 py-2 rounded-md ${
-                                            theme === 'dark'
-                                                ? 'bg-gray-700 text-gray-100 hover:bg-gray-600'
-                                                : 'text-gray-700 border border-gray-300 hover:bg-gray-50'
-                                        }`}
-                                    >
-                                        Отмена
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        className={`px-4 py-2 text-white rounded-md hover:bg-blue-700 transition-colors ${
-                                            theme === 'dark' ? 'bg-blue-700' : 'bg-blue-600'
-                                        }`}
-                                    >
-                                        {editingId ? 'Обновить' : 'Сохранить'}
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <TransactionFormModal
+                isOpen={isModalOpen}
+                onClose={resetForm}
+                onSubmit={handleSubmit}
+                formData={formData}
+                onInputChange={handleInputChange}
+                errorMessage={errorMessage}
+                theme={theme}
+                editingId={editingId}
+            />
         </div>
     );
 };

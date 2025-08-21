@@ -32,7 +32,10 @@ class TableService
     {
         /** @var User $user */
         $user = auth()->user();
-        $tables = $user?->tables->mapWithKeys(static function ($table) use ($tableId, $user) {
+        $tables = $user?->tables->mapWithKeys(/**
+         * @param $table Table
+         * @return array[]
+         */ static function (Table $table) use ($tableId, $user) {
             return [
                 $table->id => [
                     'name' => $table->name,
@@ -57,9 +60,11 @@ class TableService
      * Получение данных определенной таблицы
      * @param TableDataDTO $request
      * @return JsonResponse
+     * @throws JsonException
      */
     public function getTableData(TableDataDTO $request): JsonResponse
     {
+        /** @var Table $table */
         $table = Table::find($request->id);
         $result = [
             'permission' => $table->getUserPermissions($request->requestUser->id),
@@ -96,6 +101,7 @@ class TableService
     }
 
     /**
+     * Получение страницы управления таблицами
      * @return Response
      */
     public function getTableControl(): Response
@@ -118,6 +124,11 @@ class TableService
         ]);
     }
 
+    /**
+     * Изменение таблицы
+     * @param UpdateDTO $request
+     * @return JsonResponse
+     */
     public function edit(UpdateDTO $request): JsonResponse
     {
         $table = Table::find($request->id);
@@ -126,18 +137,28 @@ class TableService
         return response()->json(null, 204);
     }
 
-    public function remove(GetAndRemoveDTO $request)
+    /**
+     * Удаление таблицы
+     * @param GetAndRemoveDTO $request
+     * @return JsonResponse
+     */
+    public function remove(GetAndRemoveDTO $request): JsonResponse
     {
         $table = Table::find($request->id);
         $table->delete();
         return response()->json(null, 204);
     }
 
-    public function searchUsers(Request $request)
+    /**
+     * Метод поиска пользователей для добавления
+     * @param Request $request
+     * @return mixed
+     */
+    public function searchUsers(Request $request): mixed
     {
         $query = $request->input('query');
         $tableId = $request->input('tableId');
-        return User::where(function ($q) use ($query) {
+        return User::where(static function ($q) use ($query) {
             $q->where('email', 'like', "$query%")
                 ->orWhere('name', 'like', "$query%");
         })
@@ -148,7 +169,13 @@ class TableService
             ->get(['id', 'name', 'email']);
     }
 
-    public function share(AddUserDTO $request)
+    /**
+     * Метод предоставления прав пользователю
+     * @param AddUserDTO $request
+     * @return JsonResponse
+     * @throws JsonException
+     */
+    public function share(AddUserDTO $request): JsonResponse
     {
         $user = User::find($request->user);
         $user->tables()->attach($request->table, [

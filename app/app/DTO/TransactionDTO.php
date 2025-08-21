@@ -7,6 +7,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use JsonException;
 
 /** DTO для создания записи в таблице */
 class TransactionDTO extends AbstractDTO
@@ -60,6 +61,7 @@ class TransactionDTO extends AbstractDTO
     /**
      * Валидация
      * @return void
+     * @throws JsonException
      */
     protected function selfValidate(): void
     {

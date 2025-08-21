@@ -4,19 +4,19 @@ namespace App\DTO\Table;
 
 use App\DTO\AbstractDTO;
 use App\Enums\Errors;
-use App\Enums\Permissions;
-use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use JsonException;
 
-/** DTO для удаления записи из таблицы */
+/** DTO для удаления пользователя из таблицы */
 class DelUserDTO extends AbstractDTO
 {
 
     /**
      * Закрытый конструктор
-     * @param int|null $id
+     * @param int|null $user
+     * @param int|null $table
      */
     protected function __construct(
         public ?int  $user = null,
@@ -50,6 +50,7 @@ class DelUserDTO extends AbstractDTO
     /**
      * Валидация
      * @return void
+     * @throws JsonException
      */
     protected function selfValidate(): void
     {

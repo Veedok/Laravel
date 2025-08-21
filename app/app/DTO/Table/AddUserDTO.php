@@ -5,18 +5,20 @@ namespace App\DTO\Table;
 use App\DTO\AbstractDTO;
 use App\Enums\Errors;
 use App\Enums\Permissions;
-use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use JsonException;
 
-/** DTO для удаления записи из таблицы */
+/** DTO для добавления пользователя к таблице */
 class AddUserDTO extends AbstractDTO
 {
 
     /**
      * Закрытый конструктор
-     * @param int|null $id
+     * @param int|null $user
+     * @param int|null $table
+     * @param array $permissions
      */
     protected function __construct(
         public ?int  $user = null,
@@ -37,7 +39,7 @@ class AddUserDTO extends AbstractDTO
         $validator = Validator::make($data, [
             'userId' => 'required|integer|exists:users,id',
             'tableId' => 'required|integer|exists:tables,id',
-            'permissions' => 'required|array',
+            'permissions' => 'nullable|array',
             'permissions.*' => [
                 'required',
                 'string',
@@ -57,6 +59,7 @@ class AddUserDTO extends AbstractDTO
     /**
      * Валидация
      * @return void
+     * @throws JsonException
      */
     protected function selfValidate(): void
     {

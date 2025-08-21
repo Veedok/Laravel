@@ -4,17 +4,17 @@ namespace App\DTO\Table;
 
 use App\DTO\AbstractDTO;
 use App\Enums\Errors;
-use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use JsonException;
 
-/** DTO для удаления записи из таблицы */
+/** DTO для работы с таблицей */
 class GetAndRemoveDTO extends AbstractDTO
 {
 
 
-    private const MAP = [
+    private const array MAP = [
         'tableDelete' => 'removeTable',
         'tableUsers' => 'changeUsers'
     ];
@@ -55,6 +55,7 @@ class GetAndRemoveDTO extends AbstractDTO
     /**
      * Валидация
      * @return void
+     * @throws JsonException
      */
     protected function selfValidate(): void
     {
@@ -63,7 +64,12 @@ class GetAndRemoveDTO extends AbstractDTO
         }
     }
 
-    private function setPermissionCheck(?string $route)
+    /**
+     * Метод проставления флага для чего вызвано DTO
+     * @param string|null $route
+     * @return void
+     */
+    private function setPermissionCheck(?string $route): void
     {
         $this->rights = !empty($route) && array_key_exists($route, self::MAP)
             ? self::MAP[$route]

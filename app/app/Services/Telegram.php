@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Support\Facades\Log;
@@ -9,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 /** Класс для отправки в telegram */
 class Telegram
 {
-    /** @var Client Газел клиент */
+    /** @var Client Клиент для http запросов */
     protected Client $client;
     /** @var mixed Токен бота  */
     protected mixed $botToken;
@@ -55,7 +56,7 @@ class Telegram
             ]);
 
             return json_decode($response->getBody(), true, 512, JSON_THROW_ON_ERROR);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Telegram error: '.$e->getMessage());
             return false;
         }

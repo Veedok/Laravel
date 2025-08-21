@@ -41,6 +41,7 @@ readonly class TablesController
      * Получение данных таблицы
      * @param TableDataDTO $request
      * @return JsonResponse
+     * @throws JsonException
      */
     public function getTableData(TableDataDTO $request): JsonResponse
     {
@@ -58,27 +59,52 @@ readonly class TablesController
         return response()->json($this->tableService->newTable($request));
     }
 
+    /**
+     * Рендер страницы управления таблицами
+     * @return Response
+     */
     public function getTablePage(): Response
     {
         return $this->tableService->getTableControl();
     }
 
-    public function editTable(UpdateDTO $request)
+    /**
+     * Метод изменения таблицы
+     * @param UpdateDTO $request
+     * @return JsonResponse
+     */
+    public function editTable(UpdateDTO $request): JsonResponse
     {
         return $this->tableService->edit($request);
     }
 
-    public function remove(GetAndRemoveDTO $request)
+    /**
+     * Метод удаления таблицы
+     * @param GetAndRemoveDTO $request
+     * @return JsonResponse
+     */
+    public function remove(GetAndRemoveDTO $request): JsonResponse
     {
         return $this->tableService->remove($request);
     }
 
-    public function userSearch(Request $request)
+    /**
+     * Метод для suggest при поиске добавляемых пользователей
+     * @param Request $request
+     * @return mixed
+     */
+    public function userSearch(Request $request): mixed
     {
         return $this->tableService->searchUsers($request);
     }
 
-    public function share(AddUserDTO $request)
+    /**
+     * Метод добавления пользователя в таблицу
+     * @param AddUserDTO $request
+     * @return JsonResponse
+     * @throws JsonException
+     */
+    public function share(AddUserDTO $request): JsonResponse
     {
         return $this->tableService->share($request);
     }

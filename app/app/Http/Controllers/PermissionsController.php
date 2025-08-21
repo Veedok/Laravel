@@ -5,28 +5,50 @@ namespace App\Http\Controllers;
 use App\DTO\Table\ChangePermissionDTO;
 use App\DTO\Table\DelUserDTO;
 use App\DTO\Table\GetAndRemoveDTO;
-use App\Models\Table;
 use App\Services\Permissions;
-use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use JsonException;
 
-class PermissionsController
+/** Контроллер для работы с правами пользователей */
+readonly class PermissionsController
 {
-    public function __construct(private readonly Permissions $service)
+    /**
+     * Определение зависимостей
+     * @param Permissions $service
+     */
+    public function __construct(private Permissions $service)
     {
 
     }
 
-    public function getUsers(GetAndRemoveDTO $request)
+    /**
+     * Получение пользователей таблиц
+     * @param GetAndRemoveDTO $request
+     * @return JsonResponse
+     * @throws JsonException
+     */
+    public function getUsers(GetAndRemoveDTO $request): JsonResponse
     {
         return response()->json($this->service->get($request->id, $request->requestUser->id));
     }
 
-    public function updatePermissions(ChangePermissionDTO $request)
+    /**
+     * Обновление прав пользователей
+     * @param ChangePermissionDTO $request
+     * @return JsonResponse
+     * @throws JsonException
+     */
+    public function updatePermissions(ChangePermissionDTO $request): JsonResponse
     {
         return response()->json($this->service->changePermission($request));
     }
 
-    public function removeUser(DelUserDTO $request)
+    /**
+     * Удаление пользователя из таблицы
+     * @param DelUserDTO $request
+     * @return JsonResponse
+     */
+    public function removeUser(DelUserDTO $request): JsonResponse
     {
         return response()->json($this->service->delUser($request));
     }

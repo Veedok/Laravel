@@ -2,19 +2,23 @@
 
 namespace App\Models;
 
+use Closure;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Foundation\Auth\User as Authenticate;
 use Illuminate\Notifications\Notifiable;
+use JsonException;
 
 /** Модель пользователя
  * @property mixed $pivot
  * @property mixed|null $tables
  * @property mixed $id
+ * @property mixed $theme
+ * @method static where(Closure $param)
+ * @method static find(int|null $user)
  */
-class User extends Authenticatable
+class User extends Authenticate
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
@@ -77,26 +81,16 @@ class User extends Authenticatable
     }
 
     /**
-     * Проверка прав на запись в таблице
-     * @param $id
-     * @return bool
+     * Проверка прав
+     * @param int $id ID таблицы
+     * @param string $permission Требуемые права
+     * @return bool|null
+     * @throws JsonException
      */
-    public function checkPermission($id): bool
+    public function checkTablePermission(int $id, string $permission): ?bool
     {
-        return $this->tables()
-            ->whereHas('transactions', function($query) use ($id) {
-                $query->where('id', $id);
-            })
-            ->exists();
-    }
-
-    public function checkTablePermission($id, $permission)
-    {
-        return $this->tables()->find($id)?->pivot->hasPermission($permission);
-    }
-
-    public function userTables(): HasMany
-    {
-        return $this->hasMany(UserTable::class);
+        $relation = $this->tables()->find($id)?->pivot;
+        /** @var UserTable $relation */
+        return $relation->hasPermission($permission);
     }
 }

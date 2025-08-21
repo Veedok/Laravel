@@ -5,6 +5,7 @@ namespace App\Services;
 use App\DTO\DestroyDTO;
 use App\DTO\TransactionDTO;
 use App\DTO\UpdateTransactionDTO;
+use App\Models\Table;
 use Illuminate\Http\JsonResponse;
 
 /** Сервис для работы с записями таблицы */
@@ -17,7 +18,10 @@ class Transaction
      */
     public function save(TransactionDTO $request): JsonResponse
     {
-        $transaction = $request->requestUser->tables()->find($request->table)?->transactions()->create([
+        /** @var Table $table */
+        $table = $request->requestUser->tables()->find($request->table);
+        /** @var \App\Models\Transaction $transaction */
+        $transaction = $table?->transactions()->create([
             "name" => $request->name,
             "type" => $request->changeBalance ? 'income' : 'expense',
             "sum" => $request->sum,

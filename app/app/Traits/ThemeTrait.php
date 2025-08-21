@@ -2,31 +2,53 @@
 
 namespace App\Traits;
 
+use App\Models\User;
+use Illuminate\Foundation\Application;
+use Illuminate\Session\SessionManager;
+
+/** Трейт для работы с темами */
 trait ThemeTrait
 {
-    protected function setTheme(string $theme)
+
+    /**
+     * Метод изменения темы
+     * @param string $theme
+     * @return void
+     */
+    protected function setTheme(string $theme): void
     {
         if (!in_array($theme, ['light', 'dark'])) {
             $theme = 'light';
         }
-
         if (auth()->check()) {
-            auth()->user()->update(['theme' => $theme]);
+            /** @var User $user */
+            $user = auth()->user();
+            $user->update(['theme' => $theme]);
         }
-
         session(['theme' => $theme]);
     }
 
-    public function getTheme()
+    /**
+     * Получения темы пользователя
+     * @return Application|SessionManager|mixed|object|null
+     */
+    public function getTheme(): mixed
     {
-        if (auth()->check() && auth()->user()->theme) {
-            return auth()->user()->theme;
+        if (auth()->check()) {
+            /** @var User $user */
+            $user = auth()->user();
+                if($user->theme){
+                    return $user->theme;
+                }
         }
-
         return session('theme', 'light');
     }
 
-    protected function shareTheme()
+    /**
+     * Получения массива с информацией о теме
+     * @return array
+     */
+    protected function shareTheme(): array
     {
         return [
             'theme' => $this->getTheme(),

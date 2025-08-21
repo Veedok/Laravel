@@ -3,12 +3,13 @@
 namespace App\Console\Commands;
 
 use App\Services\Telegram;
+use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Console\Command;
 use RuntimeException;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 
-/** Команда для создания бэкапа БД */
+/** Команда для создания бекап БД */
 class BackupsCommand extends Command
 {
     /**
@@ -21,7 +22,7 @@ class BackupsCommand extends Command
      * Описание команды
      * @var string
      */
-    protected $description = 'Команда создания Бэкапов';
+    protected $description = 'Команда создания бекап';
 
     /**
      * Выполнение команды.
@@ -45,7 +46,8 @@ class BackupsCommand extends Command
                 $backupPath,
                 "Бэкап БД от ".now()->format('d.m.Y')
             );
-        } catch (ProcessFailedException $exception) {
+            $this->info(implode(' | ', $result));
+        } catch (ProcessFailedException|GuzzleException $exception) {
             $this->error('Backup failed: ' . $exception->getMessage());
         }
     }

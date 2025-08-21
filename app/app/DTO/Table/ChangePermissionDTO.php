@@ -4,13 +4,12 @@ namespace App\DTO\Table;
 
 use App\DTO\AbstractDTO;
 use App\Enums\Errors;
-use App\Enums\Permissions;
-use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use JsonException;
 
-/** DTO для удаления записи из таблицы */
+/** DTO для изменения прав пользователя */
 class ChangePermissionDTO extends AbstractDTO
 {
 
@@ -57,6 +56,7 @@ class ChangePermissionDTO extends AbstractDTO
     /**
      * Валидация
      * @return void
+     * @throws JsonException
      */
     protected function selfValidate(): void
     {

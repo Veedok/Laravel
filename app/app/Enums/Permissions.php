@@ -2,6 +2,7 @@
 
 namespace App\Enums;
 
+/** Перечисление прав */
 enum Permissions: string
 {
     case INVITE = 'invite';
@@ -13,6 +14,10 @@ enum Permissions: string
     case EDIT_TABLE = 'editTables';
 
 
+    /**
+     * Метод возвращает массив прав с их описанием
+     * @return string[]
+     */
     public static function getDescriptions(): array
     {
         return [
@@ -24,10 +29,13 @@ enum Permissions: string
             self::EDIT_TABLE->value => 'Изменять имя таблицы',
             self::REMOVE_TABLE->value => 'Удаление таблицы',
 
-
         ];
     }
 
+    /**
+     * Возвращает массив существующих прав
+     * @return array
+     */
     public static function getValues(): array
     {
         return array_column(self::cases(), 'value');

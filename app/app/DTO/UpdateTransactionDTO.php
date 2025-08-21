@@ -3,11 +3,13 @@
 namespace App\DTO;
 
 use App\Enums\Errors;
+use App\Models\Table;
 use App\Models\Transaction;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use JsonException;
 
 /** DTO для обновления транзакции */
 class UpdateTransactionDTO extends AbstractDTO
@@ -68,9 +70,11 @@ class UpdateTransactionDTO extends AbstractDTO
     /**
      * Валидация
      * @return void
+     * @throws JsonException
      */
     protected function selfValidate(): void
     {
+        /** @var Table $table */
         $table = $this->requestUser->tables()->find($this->table);
         /** @var Transaction $transaction */
         $transaction = $table?->transactions()->find($this->id);

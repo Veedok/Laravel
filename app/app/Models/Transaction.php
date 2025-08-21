@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property mixed $name
  * @property mixed $date
  * @property mixed|string $type
+ * @property mixed $id
  * @method static find(int|null $id)
  */
 class Transaction extends Model

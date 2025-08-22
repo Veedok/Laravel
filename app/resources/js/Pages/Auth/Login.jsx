@@ -1,10 +1,7 @@
-import Checkbox from '@/Components/Checkbox';
-import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
-import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
+import GuestLayout from '@/Layouts/GuestLayout';
+import ApplicationLogo from '@/Components/ApplicationLogo';
+import { usePage } from '@inertiajs/react';
 
 export default function Login({ status, canResetPassword }) {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -13,9 +10,10 @@ export default function Login({ status, canResetPassword }) {
         remember: false,
     });
 
+    const theme = usePage().props.theme || 'light';
+
     const submit = (e) => {
         e.preventDefault();
-
         post('/login', {
             onFinish: () => reset('password'),
         });
@@ -23,81 +21,99 @@ export default function Login({ status, canResetPassword }) {
 
     return (
         <GuestLayout>
-            <Head title="Log in" />
+            <Head title="Вход в систему" />
+
+            <div className="auth-header">
+                <div className="auth-logo">
+                    <ApplicationLogo
+                        className={`h-12 w-auto ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}
+                    />
+                </div>
+            </div>
 
             {status && (
-                <div className="mb-4 text-sm font-medium text-green-600">
+                <div className="status-success">
                     {status}
                 </div>
             )}
 
             <form onSubmit={submit}>
-                <div>
-                    <InputLabel htmlFor="email" value="Email" />
-
-                    <TextInput
+                <div className="auth-input-group">
+                    <label htmlFor="email" className="auth-label">
+                        Электронная почта
+                    </label>
+                    <input
                         id="email"
                         type="email"
                         name="email"
                         value={data.email}
-                        className="mt-1 block w-full"
+                        className="auth-input"
                         autoComplete="username"
-                        isFocused={true}
+                        autoFocus
                         onChange={(e) => setData('email', e.target.value)}
+                        placeholder="your@email.com"
                     />
-
-                    <InputError message={errors.email} className="mt-2"  />
+                    {errors.email && (
+                        <div className="auth-error">{errors.email}</div>
+                    )}
                 </div>
 
-                <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Password" />
-
-                    <TextInput
+                <div className="auth-input-group">
+                    <label htmlFor="password" className="auth-label">
+                        Пароль
+                    </label>
+                    <input
                         id="password"
                         type="password"
                         name="password"
                         value={data.password}
-                        className="mt-1 block w-full"
+                        className="auth-input"
                         autoComplete="current-password"
                         onChange={(e) => setData('password', e.target.value)}
+                        placeholder="Введите ваш пароль"
                     />
-
-                    <InputError message={errors.password} className="mt-2" />
+                    {errors.password && (
+                        <div className="auth-error">{errors.password}</div>
+                    )}
                 </div>
 
-                <div className="mt-4 block">
-                    <label className="flex items-center">
-                        <Checkbox
-                            name="remember"
-                            checked={data.remember}
-                            onChange={(e) =>
-                                setData('remember', e.target.checked)
-                            }
-                        />
-                        <span className="ms-2 text-sm text-gray-600">
-                            Remember me
-                        </span>
+                <div className="auth-remember">
+                    <input
+                        type="checkbox"
+                        name="remember"
+                        checked={data.remember}
+                        onChange={(e) => setData('remember', e.target.checked)}
+                        className="auth-checkbox"
+                    />
+                    <label className="auth-remember-label">
+                        Запомнить меня
                     </label>
                 </div>
 
-                <div className="mt-4 flex items-center justify-end">
+                <button
+                    type="submit"
+                    className="auth-primary-btn"
+                    disabled={processing}
+                >
+                    {processing ? 'Вход...' : 'Войти в систему'}
+                </button>
+
+                <div className="auth-links">
                     {canResetPassword && (
                         <Link
                             href={route('password.request')}
-                            className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                            className="auth-link"
                         >
-                            Forgot your password?
+                            Забыли пароль?
                         </Link>
                     )}
+
                     <Link
                         href={route('register')}
-                        className="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 ms-4"
+                        className="auth-secondary-btn"
                     >
-                        Регистрация
+                        Создать аккаунт
                     </Link>
-                    <PrimaryButton className="ms-4" disabled={processing} type={'submit'}>
-                        Войти
-                    </PrimaryButton>
                 </div>
             </form>
         </GuestLayout>

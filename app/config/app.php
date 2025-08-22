@@ -14,7 +14,7 @@ return [
     */
 
     'name' => env('APP_NAME', 'Laravel'),
-
+    'console_admin_password' => env('CONSOLE_ADMIN_PASSWORD'),
     /*
     |--------------------------------------------------------------------------
     | Application Environment

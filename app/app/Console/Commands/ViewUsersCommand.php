@@ -87,12 +87,12 @@ class ViewUsersCommand extends Command
 
     protected function displayUsersData(array $usersData): void
     {
-        $this->info("\n" . str_repeat('=', 100));
+        $this->info("\n" . str_repeat('=', 30));
         $this->info('USER TABLES AND PERMISSIONS');
-        $this->info(str_repeat('=', 100));
+        $this->info(str_repeat('=', 30));
         foreach ($usersData as $email => $data) {
             $this->info("\n📧 <fg=cyan>Email: " . $email . "</>");
-            $this->info(str_repeat('-', 100));
+            $this->info(str_repeat('-', 30));
             if (empty($data)) {
                 $this->line("   No tables or permissions");
                 continue;
@@ -121,8 +121,8 @@ class ViewUsersCommand extends Command
                 $this->line("   ⚠️  <fg=red>UNEXPECTED KEYS:</> " . implode(', ', $otherKeys));
             }
         }
-        $this->info("\n" . str_repeat('=', 100));
+        $this->info("\n" . str_repeat('=', 30));
         $this->info('END');
-        $this->info(str_repeat('=', 100));
+        $this->info(str_repeat('=', 30));
     }
 }

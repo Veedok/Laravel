@@ -1,0 +1,306 @@
+/* Стили для форм авторизации - совместимые с Tailwind */
+.auth-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.auth-card {
+    background: white;
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+    width: 100%;
+    max-width: 440px;
+    backdrop-filter: blur(10px);
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.auth-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+}
+
+.auth-input-group {
+    margin-bottom: 24px;
+}
+
+.auth-label {
+    display: block;
+    font-weight: 600;
+    color: #4a5568;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+}
+
+.auth-input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    background: #f7fafc;
+    font-family: 'Inter', sans-serif;
+}
+
+.auth-input:focus {
+    outline: none;
+    border-color: #667eea;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.auth-error {
+    color: #e53e3e;
+    font-size: 14px;
+    margin-top: 6px;
+    font-family: 'Inter', sans-serif;
+}
+
+.auth-remember {
+    display: flex;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.auth-checkbox {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #cbd5e0;
+    border-radius: 4px;
+    margin-right: 10px;
+    cursor: pointer;
+}
+
+.auth-checkbox:checked {
+    background-color: #667eea;
+    border-color: #667eea;
+}
+
+.auth-remember-label {
+    color: #4a5568;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+}
+
+.auth-primary-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 20px;
+    font-family: 'Inter', sans-serif;
+}
+
+.auth-primary-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+}
+
+.auth-primary-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.auth-links {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.auth-link {
+    color: #667eea;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: color 0.3s ease;
+    font-family: 'Inter', sans-serif;
+}
+
+.auth-link:hover {
+    color: #764ba2;
+}
+
+.auth-secondary-btn {
+    padding: 12px 24px;
+    background: #edf2f7;
+    color: #4a5568;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-family: 'Inter', sans-serif;
+}
+
+.auth-secondary-btn:hover {
+    background: #e2e8f0;
+    color: #2d3748;
+}
+
+.status-success {
+    background: #c6f6d5;
+    color: #2f855a;
+    padding: 16px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    text-align: center;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+}
+
+/* Адаптивность */
+@media (max-width: 480px) {
+    .auth-card {
+        padding: 24px;
+        margin: 10px;
+    }
+
+    .auth-links {
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .auth-secondary-btn {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+/* Совместимость с темной темой */
+.dark .auth-card {
+    background: #1f2937;
+    border-color: #374151;
+}
+
+.dark .auth-input {
+    background: #374151;
+    border-color: #4b5563;
+    color: #f3f4f6;
+}
+
+.dark .auth-input:focus {
+    background: #4b5563;
+    border-color: #667eea;
+}
+
+.dark .auth-remember-label {
+    color: #e5e7eb;
+}
+
+.dark .auth-secondary-btn {
+    background: #374151;
+    color: #e5e7eb;
+}
+
+.dark .auth-secondary-btn:hover {
+    background: #4b5563;
+    color: #f3f4f6;
+}
+
+.dark .auth-link {
+    color: #93c5fd;
+}
+
+.dark .auth-link:hover {
+    color: #bfdbfe;
+}
+
+.dark .auth-label {
+    color: #e5e7eb;
+}
+/* Дополнительные стили для формы регистрации */
+.auth-password-strength {
+    margin-top: 8px;
+    height: 4px;
+    background: #e2e8f0;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.auth-password-strength-meter {
+    height: 100%;
+    transition: width 0.3s ease;
+    background: linear-gradient(90deg, #e53e3e, #f6ad55, #68d391);
+}
+
+.auth-password-hints {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #718096;
+}
+
+.auth-password-hint {
+    display: flex;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.auth-password-hint.valid {
+    color: #38a169;
+}
+
+.auth-password-hint.invalid {
+    color: #e53e3e;
+}
+
+/* Анимация появления полей */
+.auth-input-group {
+    animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Задержки для анимации полей */
+.auth-input-group:nth-child(1) { animation-delay: 0.1s; }
+.auth-input-group:nth-child(2) { animation-delay: 0.2s; }
+.auth-input-group:nth-child(3) { animation-delay: 0.3s; }
+.auth-input-group:nth-child(4) { animation-delay: 0.4s; }
+
+/* Совместимость с темной темой для новых элементов */
+.dark .auth-password-strength {
+    background: #4b5563;
+}
+
+.dark .auth-password-hints {
+    color: #9ca3af;
+}
+
+.dark .auth-password-hint.valid {
+    color: #68d391;
+}
+
+.dark .auth-password-hint.invalid {
+    color: #fc8181;
+}

@@ -15,7 +15,6 @@ use JsonException;
  * @property mixed|null $tables
  * @property mixed $id
  * @property mixed $theme
- * @method static where(Closure $param)
  * @method static find(int|null $user)
  */
 class User extends Authenticate
@@ -92,5 +91,10 @@ class User extends Authenticate
         $relation = $this->tables()->find($id)?->pivot;
         /** @var UserTable $relation */
         return $relation->hasPermission($permission);
+    }
+
+    public function setEmailAttribute($value)
+    {
+        $this->attributes['email'] = strtolower($value);
     }
 }

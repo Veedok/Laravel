@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Validator;
 
 class RegisteredUserController extends Controller
 {
@@ -30,15 +32,23 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $request->validate([
+        $normalizedEmail = strtolower($request->email);
+        $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
+            'email' => 'required|string|email|max:255',
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
-
+        $validator->after(function ($validator) use ($normalizedEmail) {
+            if (User::where('email', $normalizedEmail)->exists()) {
+                $validator->errors()->add('email', 'The email has already been taken.');
+            }
+        });
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
         $user = User::create([
             'name' => $request->name,
-            'email' => $request->email,
+            'email' => $normalizedEmail,
             'password' => Hash::make($request->password),
         ]);
 

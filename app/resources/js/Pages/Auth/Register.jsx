@@ -1,9 +1,7 @@
-import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
-import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
+import GuestLayout from '@/Layouts/GuestLayout';
+import ApplicationLogo from '@/Components/ApplicationLogo';
+import { usePage } from '@inertiajs/react';
 
 export default function Register() {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -13,9 +11,10 @@ export default function Register() {
         password_confirmation: '',
     });
 
+    const theme = usePage().props.theme || 'light';
+
     const submit = (e) => {
         e.preventDefault();
-
         post('/register', {
             onFinish: () => reset('password', 'password_confirmation'),
         });
@@ -23,95 +22,112 @@ export default function Register() {
 
     return (
         <GuestLayout>
-            <Head title="Register" />
+            <Head title="Регистрация" />
+
+            <div className="auth-header">
+                <div className="auth-logo">
+                    <ApplicationLogo
+                        className={`h-12 w-auto ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}
+                    />
+                </div>
+            </div>
 
             <form onSubmit={submit}>
-                <div>
-                    <InputLabel htmlFor="name" value="Name" />
-
-                    <TextInput
+                <div className="auth-input-group">
+                    <label htmlFor="name" className="auth-label">
+                        Имя
+                    </label>
+                    <input
                         id="name"
                         name="name"
                         value={data.name}
-                        className="mt-1 block w-full"
+                        className="auth-input"
                         autoComplete="name"
-                        isFocused={true}
+                        autoFocus
                         onChange={(e) => setData('name', e.target.value)}
+                        placeholder="Введите ваше имя"
                         required
                     />
-
-                    <InputError message={errors.name} className="mt-2" />
+                    {errors.name && (
+                        <div className="auth-error">{errors.name}</div>
+                    )}
                 </div>
 
-                <div className="mt-4">
-                    <InputLabel htmlFor="email" value="Email" />
-
-                    <TextInput
+                <div className="auth-input-group">
+                    <label htmlFor="email" className="auth-label">
+                        Электронная почта
+                    </label>
+                    <input
                         id="email"
                         type="email"
                         name="email"
                         value={data.email}
-                        className="mt-1 block w-full"
-                        autoComplete="username"
+                        className="auth-input"
+                        autoComplete="email"
                         onChange={(e) => setData('email', e.target.value)}
+                        placeholder="your@email.com"
                         required
                     />
-
-                    <InputError message={errors.email} className="mt-2" />
+                    {errors.email && (
+                        <div className="auth-error">{errors.email}</div>
+                    )}
                 </div>
 
-                <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Password" />
-
-                    <TextInput
+                <div className="auth-input-group">
+                    <label htmlFor="password" className="auth-label">
+                        Пароль
+                    </label>
+                    <input
                         id="password"
                         type="password"
                         name="password"
                         value={data.password}
-                        className="mt-1 block w-full"
+                        className="auth-input"
                         autoComplete="new-password"
                         onChange={(e) => setData('password', e.target.value)}
+                        placeholder="Придумайте пароль"
                         required
                     />
-
-                    <InputError message={errors.password} className="mt-2" />
+                    {errors.password && (
+                        <div className="auth-error">{errors.password}</div>
+                    )}
                 </div>
 
-                <div className="mt-4">
-                    <InputLabel
-                        htmlFor="password_confirmation"
-                        value="Confirm Password"
-                    />
-
-                    <TextInput
+                <div className="auth-input-group">
+                    <label htmlFor="password_confirmation" className="auth-label">
+                        Подтверждение пароля
+                    </label>
+                    <input
                         id="password_confirmation"
                         type="password"
                         name="password_confirmation"
                         value={data.password_confirmation}
-                        className="mt-1 block w-full"
+                        className="auth-input"
                         autoComplete="new-password"
-                        onChange={(e) =>
-                            setData('password_confirmation', e.target.value)
-                        }
+                        onChange={(e) => setData('password_confirmation', e.target.value)}
+                        placeholder="Повторите пароль"
                         required
                     />
-
-                    <InputError
-                        message={errors.password_confirmation}
-                        className="mt-2"
-                    />
+                    {errors.password_confirmation && (
+                        <div className="auth-error">{errors.password_confirmation}</div>
+                    )}
                 </div>
 
-                <div className="mt-4 flex items-center justify-end">
+                <button
+                    type="submit"
+                    className="auth-primary-btn"
+                    disabled={processing}
+                >
+                    {processing ? 'Регистрация...' : 'Создать аккаунт'}
+                </button>
+
+                <div className="auth-links">
                     <Link
                         href={route('login')}
-                        className="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 ms-4"
+                        className="auth-secondary-btn"
                     >
-                       Страница входа
+                        Войти
                     </Link>
-                    <PrimaryButton className="ms-4" disabled={processing} type={'submit'}>
-                        Зарегистрироваться
-                    </PrimaryButton>
                 </div>
             </form>
         </GuestLayout>

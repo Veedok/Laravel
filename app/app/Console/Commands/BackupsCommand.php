@@ -49,9 +49,4 @@ class BackupsCommand extends Command
             $this->error('Backup failed: ' . $exception->getMessage());
         }
     }
-//use Symfony\Component\VarDumper\Cloner\VarCloner;
-//use Symfony\Component\VarDumper\Dumper\CliDumper;
-//$dumper = new CliDumper();
-//$cloner = new VarCloner();
-//$dumper->dump($cloner->cloneVar($c));
 }

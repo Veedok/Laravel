@@ -53,16 +53,14 @@ class Table extends Model
      * @return array
      * @throws JsonException
      */
-    public function getUserPermissions($userId): array
+    public function getUserPermissions($userId, $onlyPermission = false): array
     {
         /** @var User $user */
         $user = $this->users()
             ->where('user_id', $userId)
             ->first();
-        return [
-            'is_owner' => $user->pivot->is_owner,
-            'permissions' => !$user->pivot->is_owner ? json_decode($user->pivot->permissions, true, 512, JSON_THROW_ON_ERROR) : []
-        ];
+        $perm = !$user->pivot->is_owner ? json_decode($user->pivot->permissions, true, 512, JSON_THROW_ON_ERROR) : [];
+        return $onlyPermission ? $perm : ['is_owner' => $user->pivot->is_owner, 'permissions' => $perm];
     }
 
     /**

@@ -10,7 +10,7 @@ import ConfirmModal from "@/Components/common/ConfirmModal.jsx";
 import TransactionFormModal from "@/Components/PayTable/TransactionFormModal.jsx";
 import AddTransactionButton from "@/Components/PayTable/AddTransactionButton.jsx";
 
-const TransactionsTable = ({ data, activeTableId, permissions, theme }) => {
+const TransactionsTable = ({ data, activeTableId, permissions, theme, userTags: initialUserTags }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [errorMessage, setErrorMessage] = useState(null);
@@ -23,11 +23,19 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme }) => {
         title: '',
         changeBalance: true,
         sum: '',
-        date: new Date().toISOString().split('T')[0]
+        date: new Date().toISOString().split('T')[0],
+        tags: ''
     });
 
     const [transactions, setTransactions] = useState(data);
+    const [userTags, setUserTags] = useState(initialUserTags || []);
 
+    // Функция для добавления нового тега в список
+    const addNewTag = (newTag) => {
+        if (!userTags.includes(newTag)) {
+            setUserTags(prev => [...prev, newTag]);
+        }
+    };
     const showSuccess = (message) => {
         setSuccessMessage(message);
     };
@@ -42,7 +50,8 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme }) => {
             type: formData.changeBalance,
             sum: parseFloat(formData.sum),
             date: formData.date,
-            tableId: activeTableId
+            tableId: activeTableId,
+            tags: formData.tags,
         };
 
         try {
@@ -88,7 +97,8 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme }) => {
             title: transaction.title,
             changeBalance: transaction.changeBalance,
             sum: transaction.sum.toFixed(2),
-            date: new Date(transaction.date.split('.').reverse().join('-')).toISOString().split('T')[0]
+            date: new Date(transaction.date.split('.').reverse().join('-')).toISOString().split('T')[0],
+            tags: transaction.tags?.join(' ') || ''
         });
         setIsModalOpen(true);
         setErrorMessage(null);
@@ -258,6 +268,8 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme }) => {
                 errorMessage={errorMessage}
                 theme={theme}
                 editingId={editingId}
+                userTags={userTags}
+                onAddNewTag={addNewTag}
             />
         </div>
     );

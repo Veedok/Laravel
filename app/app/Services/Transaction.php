@@ -6,7 +6,10 @@ use App\DTO\DestroyDTO;
 use App\DTO\TransactionDTO;
 use App\DTO\UpdateTransactionDTO;
 use App\Models\Table;
+use App\Models\Tag;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Str;
 
 /** Сервис для работы с записями таблицы */
 class Transaction
@@ -27,6 +30,7 @@ class Transaction
             "sum" => $request->sum,
             "date" => $request->date,
         ]);
+        !empty($request->tags) && $this->tagsSave($request->tags, $request->requestUser, $transaction);
         return response()->json(['status' => 'ok', 'id' => $transaction->id]);
     }
 
@@ -37,6 +41,7 @@ class Transaction
      */
     public function update(UpdateTransactionDTO $request): JsonResponse
     {
+        $this->tagsSave($request->tags, $request->requestUser, $request->transaction);
         (isset($request->name)) && $request->transaction->name = $request->name;
         (isset($request->date)) && $request->transaction->date = $request->date;
         (isset($request->sum)) && $request->transaction->sum = $request->sum;
@@ -56,5 +61,22 @@ class Transaction
     {
         $request->getTransaction()->delete();
         return response()->json(['status' => 'ok']);
+    }
+
+    private function tagsSave(array $tags, User $user, \App\Models\Transaction $transaction)
+    {
+        $tagIds = [];
+        foreach ($tags as $tagName) {
+            $cleanTagName = Str::lower(trim($tagName, "# \t\n\r\0\x0B"));
+            if (!empty($cleanTagName)) {
+                $tag = Tag::firstOrCreate(
+                    ['name' => $cleanTagName, 'user_id' => $user->id],
+                    ['name' => $cleanTagName, 'user_id' => $user->id]
+                );
+                $tagIds[] = $tag->id;
+            }
+        }
+        $transaction->tags()->sync($tagIds);
+        $user->unusedTags();
     }
 }

@@ -28,12 +28,13 @@ class UpdateTransactionDTO extends AbstractDTO
      * @param Carbon|null $date
      */
     protected function __construct(
-        public ?int    $table = null,
-        public ?int    $id = null,
-        public ?string $name = null,
-        public ?bool   $changeBalance = false,
-        public ?float  $sum = null,
-        public ?Carbon $date = null
+        public ?int              $table = null,
+        public ?int              $id = null,
+        public ?string           $name = null,
+        public ?bool             $changeBalance = false,
+        public ?float            $sum = null,
+        public ?Carbon           $date = null,
+        public null|string|array $tags = null
     )
     {
         if ($this->sum !== null) {
@@ -52,15 +53,16 @@ class UpdateTransactionDTO extends AbstractDTO
         $validator = Validator::make($data, [
             'tableId' => 'required|integer|exists:tables,id',
             'id' => 'required|integer',
-            'name' => 'required_without_all:changeBalance,sum,date|string|max:255',
-            'type' => 'required_without_all:title,sum,date|bool',
-            'sum' => 'required_without_all:title,changeBalance,date|numeric',
-            'date' => 'required_without_all:sum,changeBalance,title|date'
+            'name' => 'required_without_all:changeBalance,sum,date,tags|string|max:255',
+            'type' => 'required_without_all:title,sum,date,tags|bool',
+            'sum' => 'required_without_all:title,changeBalance,date,tags|numeric',
+            'date' => 'required_without_all:sum,changeBalance,title,tags|date',
+            'tags' => 'nullable|string'
         ]);
         if ($validator->fails()) {
             return static::handleValidationErrors($validator);
         }
-        $result = new static($data['tableId'], $data['id'], $data['name'], $data['type'], $data['sum'], new Carbon($data['date']));
+        $result = new static($data['tableId'], $data['id'], $data['name'], $data['type'], $data['sum'], new Carbon($data['date']), ($data['tags'] ?? []));
         /** @var User $user */
         $user = auth()->user();
         $user !== null && $result->setRequestUser($user);
@@ -83,16 +85,17 @@ class UpdateTransactionDTO extends AbstractDTO
         } elseif (!$this->requestUser->checkTablePermission($this->table, 'editTransactions')) {
             $this->makeError(Errors::ACCESS_DENIED, 400);
         } else {
+            !empty($this->tags) && $this->tags = explode(' ', $this->tags);
+            $changedTag = array_column($transaction->tags->toArray(), 'name') !== $this->tags;
             (!empty($this->sum) && $this->sum === $transaction->sum) && $this->sum = null;
             (!empty($this->name) && $this->name === $transaction->name) && $this->name = null;
             (!empty($this->date) && $transaction->date->format('d.m.Y') === $this->date->format('d.m.Y')) && $this->date = null;
             (($transaction->type === 'expense' && !$this->changeBalance) || ($transaction->type === 'income' && $this->changeBalance)) && $this->changeBalance = null;
-            if (!isset($this->date) && !isset($this->sum) && !isset($this->name) && !isset($this->changeBalance)) {
+            if (!isset($this->date) && !isset($this->sum) && !isset($this->name) && !isset($this->changeBalance) && !$changedTag) {
                 $this->makeError(Errors::NOTING_CHANGE, 400);
             } else {
                 $this->changeTransaction($transaction);
             }
-
         }
     }
 

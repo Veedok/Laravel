@@ -19,13 +19,15 @@ class TransactionDTO extends AbstractDTO
      * @param bool $changeBalance
      * @param float|null $sum
      * @param Carbon|null $date
+     * @param string|array|null $tags
      */
     protected function __construct(
-        public ?int    $table = null,
-        public ?string $name = null,
-        public bool    $changeBalance = false,
-        public ?float  $sum = null,
-        public ?Carbon $date = null
+        public ?int              $table = null,
+        public ?string           $name = null,
+        public bool              $changeBalance = false,
+        public ?float            $sum = null,
+        public ?Carbon           $date = null,
+        public null|string|array $tags = null
     )
     {
         if ($this->sum !== null) {
@@ -46,12 +48,13 @@ class TransactionDTO extends AbstractDTO
             'name' => 'required|string|max:255',
             'type' => 'required|bool',
             'sum' => 'required|numeric',
-            'date' => 'required|date'
+            'date' => 'required|date',
+            'tags' => 'nullable|string'
         ]);
         if ($validator->fails()) {
             return static::handleValidationErrors($validator);
         }
-        $result = new static($data['tableId'], $data['name'], $data['type'], $data['sum'], new Carbon($data['date']));
+        $result = new static($data['tableId'], $data['name'], $data['type'], $data['sum'], new Carbon($data['date']), ($data['tags'] ?? null));
         /** @var User $user */
         $user = auth()->user();
         $user !== null && $result->setRequestUser($user);
@@ -67,6 +70,9 @@ class TransactionDTO extends AbstractDTO
     {
         if (!$this->requestUser->checkTablePermission($this->table, 'addTransaction')) {
             $this->makeError(Errors::ACCESS_DENIED, 403);
+        }
+        if (!empty($this->tags)) {
+            $this->tags = explode(' ', $this->tags);
         }
     }
 }

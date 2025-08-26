@@ -68,6 +68,7 @@ class TableService
         $table = Table::find($request->id);
         $result = [
             'permission' => $table->getUserPermissions($request->requestUser->id),
+            'userTags' => $request->requestUser->tags()->pluck('name')->toArray(),
             'transactions' => []
         ];
         foreach ($table->transactions as $item) {
@@ -76,7 +77,8 @@ class TableService
                 'title' => $item->name,
                 'changeBalance' => $item->type === 'income',
                 'sum' => $item->sum,
-                'date' => $item->date->format('d.m.Y')
+                'date' => $item->date->format('d.m.Y'),
+                'tags' => array_column($item->tags->toArray(), 'name')
             ];
         }
         return response()->json($result);

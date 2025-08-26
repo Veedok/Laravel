@@ -1,4 +1,6 @@
 // components/TransactionFormModal.jsx
+import { useState, useEffect, useRef } from 'react';
+
 export default function TransactionFormModal({
                                                  isOpen,
                                                  onClose,
@@ -7,8 +9,121 @@ export default function TransactionFormModal({
                                                  onInputChange,
                                                  errorMessage,
                                                  theme,
-                                                 editingId
+                                                 editingId,
+                                                 userTags = [],
+                                                 onAddNewTag
                                              }) {
+    const [tagInput, setTagInput] = useState('');
+    const [tags, setTags] = useState([]);
+    const [suggestions, setSuggestions] = useState([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
+    const tagInputRef = useRef(null);
+    const suggestionsRef = useRef(null);
+
+    // Инициализируем теги при открытии модального окна или изменении formData.tags
+    useEffect(() => {
+        if (formData.tags && typeof formData.tags === 'string') {
+            setTags(formData.tags.split(' ').filter(tag => tag.trim() !== ''));
+        } else if (Array.isArray(formData.tags)) {
+            setTags(formData.tags.filter(tag => tag.trim() !== ''));
+        } else {
+            setTags([]);
+        }
+        setTagInput('');
+        setSuggestions([]);
+        setShowSuggestions(false);
+        setActiveSuggestionIndex(-1);
+    }, [formData.tags, isOpen]);
+
+    // Обновляем подсказки при изменении ввода
+    useEffect(() => {
+        if (tagInput.trim() && userTags.length > 0) {
+            const input = tagInput.trim().toLowerCase();
+            const filteredSuggestions = userTags
+                .filter(tag =>
+                    tag.toLowerCase().includes(input) &&
+                    !tags.includes(tag)
+                )
+                .slice(0, 3); // Ограничиваем количество подсказок до 3
+
+            setSuggestions(filteredSuggestions);
+            setShowSuggestions(filteredSuggestions.length > 0);
+            setActiveSuggestionIndex(-1);
+        } else {
+            setSuggestions([]);
+            setShowSuggestions(false);
+        }
+    }, [tagInput, userTags, tags]);
+
+    // Закрываем подсказки при клике вне области
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (suggestionsRef.current && !suggestionsRef.current.contains(event.target) &&
+                tagInputRef.current && !tagInputRef.current.contains(event.target)) {
+                setShowSuggestions(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+
+    const handleAddTag = (tag = null) => {
+        const newTag = tag ? tag : tagInput.trim().toLowerCase();
+        if (newTag && !tags.includes(newTag)) {
+            const updatedTags = [...tags, newTag];
+            setTags(updatedTags);
+            onInputChange('tags', updatedTags.join(' '));
+            setTagInput('');
+            setShowSuggestions(false);
+            setActiveSuggestionIndex(-1);
+            if (!userTags.includes(newTag)) {
+                onAddNewTag(newTag);
+            }
+        }
+    };
+
+    const handleRemoveTag = (tagToRemove) => {
+        const updatedTags = tags.filter(tag => tag !== tagToRemove);
+        setTags(updatedTags);
+        onInputChange('tags', updatedTags.join(' '));
+    };
+
+    const handleTagInputKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (activeSuggestionIndex >= 0 && suggestions[activeSuggestionIndex]) {
+                handleAddTag(suggestions[activeSuggestionIndex]);
+            } else if (tagInput.trim()) {
+                handleAddTag();
+            }
+        } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setActiveSuggestionIndex(prev =>
+                prev < suggestions.length - 1 ? prev + 1 : prev
+            );
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setActiveSuggestionIndex(prev => prev > 0 ? prev - 1 : -1);
+        } else if (e.key === 'Escape') {
+            setShowSuggestions(false);
+            setActiveSuggestionIndex(-1);
+        } else if (e.key === ' ' && tagInput.trim()) {
+            e.preventDefault();
+            handleAddTag();
+        }
+    };
+
+    const handleSuggestionClick = (suggestion) => {
+        handleAddTag(suggestion);
+    };
+
+    const handleInputChange = (e) => {
+        setTagInput(e.target.value);
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -112,6 +227,109 @@ export default function TransactionFormModal({
                                 required
                             />
                         </div>
+
+                        {/* ОБНОВЛЕННОЕ ПОЛЕ: ТЕГИ С АВТОДОПОЛНЕНИЕМ */}
+                        <div className="mb-4 relative">
+                            <label className={`block text-sm font-medium mb-1 ${
+                                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                            }`}>
+                                Теги
+                            </label>
+
+                            {/* Контейнер для отображения добавленных тегов */}
+                            {tags.length > 0 ? (
+                                <div className={`flex flex-wrap gap-2 mb-2 p-2 rounded-md ${
+                                    theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'
+                                }`}>
+                                    {tags.map((tag, index) => (
+                                        <span
+                                            key={index}
+                                            className={`inline-flex items-center px-3 py-1 rounded-full text-sm ${
+                                                theme === 'dark'
+                                                    ? 'bg-blue-600 text-white'
+                                                    : 'bg-blue-100 text-blue-800'
+                                            }`}
+                                        >
+                                            {tag}
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveTag(tag)}
+                                                className={`ml-2 rounded-full ${
+                                                    theme === 'dark'
+                                                        ? 'hover:bg-blue-700'
+                                                        : 'hover:bg-blue-200'
+                                                }`}
+                                            >
+                                                ×
+                                            </button>
+                                        </span>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className={`mb-2 p-2 rounded-md text-center ${
+                                    theme === 'dark' ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-500'
+                                }`}>
+                                    Тегов нет
+                                </div>
+                            )}
+
+                            {/* Поле для ввода нового тега с автодополнением */}
+                            <div className="relative">
+                                <input
+                                    ref={tagInputRef}
+                                    type="text"
+                                    placeholder="Введите тег..."
+                                    className={`w-full px-3 py-2 border rounded-md ${
+                                        theme === 'dark'
+                                            ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                                            : 'border-gray-300 placeholder-gray-500'
+                                    }`}
+                                    value={tagInput}
+                                    onChange={handleInputChange}
+                                    onKeyDown={handleTagInputKeyDown}
+                                    onFocus={() => setShowSuggestions(suggestions.length > 0)}
+                                />
+
+                                {/* Выпадающий список подсказок */}
+                                {showSuggestions && suggestions.length > 0 && (
+                                    <div
+                                        ref={suggestionsRef}
+                                        className={`absolute left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-md border shadow-lg z-50 ${
+                                            theme === 'dark'
+                                                ? 'bg-gray-700 border-gray-600'
+                                                : 'bg-white border-gray-300'
+                                        }`}
+                                    >
+                                        {suggestions.map((suggestion, index) => (
+                                            <div
+                                                key={index}
+                                                className={`px-4 py-2 cursor-pointer ${
+                                                    index === activeSuggestionIndex
+                                                        ? theme === 'dark'
+                                                            ? 'bg-blue-600 text-white'
+                                                            : 'bg-blue-100 text-blue-800'
+                                                        : theme === 'dark'
+                                                            ? 'hover:bg-gray-600 text-gray-100'
+                                                            : 'hover:bg-gray-100 text-gray-900'
+                                                }`}
+                                                onClick={() => handleSuggestionClick(suggestion)}
+                                                onMouseEnter={() => setActiveSuggestionIndex(index)}
+                                            >
+                                                {suggestion}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <p className={`text-xs mt-1 ${
+                                theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                            }`}>
+                                Вводите теги по одному. Нажмите Enter для добавления.
+                                Используйте стрелки ↑↓ для навигации по подсказкам.
+                            </p>
+                        </div>
+
                         <div className="flex justify-end space-x-3">
                             <button
                                 type="button"

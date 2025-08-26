@@ -45,6 +45,13 @@ class User extends Authenticate
     protected $attributes = [
         'theme' => 'light',
     ];
+
+    public function unusedTags()
+    {
+        $c = $this->tags()->whereDoesntHave('transactions');
+        $c->delete();
+    }
+
     /**
      * Get the attributes that should be cast.
      *
@@ -96,5 +103,13 @@ class User extends Authenticate
     public function setEmailAttribute($value)
     {
         $this->attributes['email'] = strtolower($value);
+    }
+
+    /**
+     * Теги, принадлежащие пользователю.
+     */
+    public function tags()
+    {
+        return $this->hasMany(Tag::class);
     }
 }

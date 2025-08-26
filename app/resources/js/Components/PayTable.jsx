@@ -9,9 +9,10 @@ import MobileTransactionCard from './PayTable/MobileTransactionCard.jsx';
 import ConfirmModal from "@/Components/common/ConfirmModal.jsx";
 import TransactionFormModal from "@/Components/PayTable/TransactionFormModal.jsx";
 import AddTransactionButton from "@/Components/PayTable/AddTransactionButton.jsx";
-import { ChevronUpIcon, ChevronDownIcon, ArrowsUpDownIcon } from '@heroicons/react/24/outline';
+import {ChevronUpIcon, ChevronDownIcon, ArrowsUpDownIcon, XMarkIcon} from '@heroicons/react/24/outline';
 
 const TransactionsTable = ({ data, activeTableId, permissions, theme, userTags: initialUserTags }) => {
+    const [filterType, setFilterType] = useState(null);
     const [isSortExpanded, setIsSortExpanded] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
@@ -32,13 +33,63 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme, userTags: 
     const [transactions, setTransactions] = useState(data);
     const [userTags, setUserTags] = useState(initialUserTags || []);
 
-    // Состояние для сортировки
     const [sortConfig, setSortConfig] = useState({
         key: 'date',
         direction: 'desc'
     });
+    const filteredAndSortedTransactions = useMemo(() => {
+        let filteredArray = [...transactions];
+        if (filterType === 'income') {
+            filteredArray = filteredArray.filter(item => item.changeBalance);
+        } else if (filterType === 'expense') {
+            filteredArray = filteredArray.filter(item => !item.changeBalance);
+        }
+        filteredArray.sort((a, b) => {
+            let aValue, bValue;
+            switch (sortConfig.key) {
+                case 'title':
+                    aValue = a.title.toLowerCase();
+                    bValue = b.title.toLowerCase();
+                    break;
+                case 'type':
+                    aValue = a.changeBalance ? 1 : 0;
+                    bValue = b.changeBalance ? 1 : 0;
+                    break;
+                case 'sum':
+                    aValue = a.sum;
+                    bValue = b.sum;
+                    break;
+                case 'date':
+                    aValue = new Date(a.date.split('.').reverse().join('-'));
+                    bValue = new Date(b.date.split('.').reverse().join('-'));
+                    break;
+                default:
+                    return 0;
+            }
+            if (aValue < bValue) {
+                return sortConfig.direction === 'asc' ? -1 : 1;
+            }
+            if (aValue > bValue) {
+                return sortConfig.direction === 'asc' ? 1 : -1;
+            }
+            return 0;
+        });
 
-    // Функция для сортировки транзакций
+        return filteredArray;
+    }, [transactions, sortConfig, filterType]);
+
+    const handleIncomeClick = () => {
+        setFilterType('income');
+    };
+
+    const handleExpenseClick = () => {
+        setFilterType('expense');
+    };
+
+    const handleClearFilter = () => {
+        setFilterType(null);
+    };
+
     const sortedTransactions = useMemo(() => {
         const sortedArray = [...transactions];
 
@@ -78,7 +129,6 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme, userTags: 
         return sortedArray;
     }, [transactions, sortConfig]);
 
-    // Функция для обработки сортировки
     const handleSort = (key) => {
         setSortConfig(prevConfig => ({
             key,
@@ -86,7 +136,6 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme, userTags: 
         }));
     };
 
-    // Функция для отображения иконки сортировки
     const renderSortIcon = (key) => {
         if (sortConfig.key !== key) {
             return <ArrowsUpDownIcon className="w-4 h-4 ml-1 opacity-50" />;
@@ -97,7 +146,6 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme, userTags: 
             : <ChevronDownIcon className="w-4 h-4 ml-1" />;
     };
 
-    // Функция для добавления нового тега в список
     const addNewTag = (newTag) => {
         if (!userTags.includes(newTag)) {
             setUserTags(prev => [...prev, newTag]);
@@ -248,7 +296,6 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme, userTags: 
 
     return (
         <div className={`space-y-6 table_container ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
-
             {successMessage && (
                 <ToastNotification
                     message={successMessage}
@@ -265,16 +312,17 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme, userTags: 
                 theme={theme}
                 formatCurrency={formatCurrency}
                 compact={true}
+                filterType={filterType}
+                onIncomeClick={handleIncomeClick}
+                onExpenseClick={handleExpenseClick}
+                onClearFilter={handleClearFilter}
             />
-
-            {/* Мобильная сортировка */}
             <div className="md:hidden">
                 <div className={`rounded-lg mb-3 ${
                     theme === 'dark'
                         ? 'bg-gray-700 border border-gray-600'
                         : 'bg-white border border-gray-200 shadow-sm'
                 }`}>
-                    {/* Заголовок аккордеона */}
                     <button
                         onClick={() => setIsSortExpanded(!isSortExpanded)}
                         className={`w-full p-3 flex items-center justify-between text-sm font-medium transition-colors ${
@@ -293,8 +341,6 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme, userTags: 
                             <ChevronDownIcon className="w-4 h-4"/>
                         )}
                     </button>
-
-                    {/* Выпадающая часть */}
                     {isSortExpanded && (
                         <div className="p-3 border-t border-gray-200 dark:border-gray-600">
                             <select
@@ -307,9 +353,9 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme, userTags: 
                                 onChange={(e) => {
                                     const [key, direction] = e.target.value.split('-');
                                     setSortConfig({key, direction});
-                                    setIsSortExpanded(false); // Автоматически скрываем после выбора
+                                    setIsSortExpanded(false);
                                 }}
-                                size={6} // Показываем несколько вариантов без скролла
+                                size={6}
                             >
                                 <option value="date-desc">📅 Новые сначала</option>
                                 <option value="date-asc">📅 Старые сначала</option>
@@ -324,7 +370,6 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme, userTags: 
                     )}
                 </div>
             </div>
-
             <div className="hidden md:block">
                 <table className="min-w-full divide-y">
                     <thead className={theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'}>
@@ -371,7 +416,7 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme, userTags: 
                     <tbody className={`divide-y ${
                         theme === 'dark' ? 'bg-gray-800 divide-gray-700' : 'bg-white divide-gray-200'
                     }`}>
-                    {sortedTransactions.map((item) => (
+                    {filteredAndSortedTransactions.map((item) => (
                         <DesktopTableRow
                             key={item.id}
                             item={item}
@@ -387,7 +432,7 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme, userTags: 
             </div>
 
             <div className="md:hidden space-y-3">
-                {sortedTransactions.map((item) => (
+                {filteredAndSortedTransactions.map((item) => (
                     <MobileTransactionCard
                         key={item.id}
                         item={item}
@@ -399,13 +444,11 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme, userTags: 
                     />
                 ))}
             </div>
-
             <AddTransactionButton
                 onClick={() => setIsModalOpen(true)}
                 theme={theme}
                 permissions={permissions}
             />
-
             <ConfirmModal
                 isOpen={deleteModalOpen}
                 onClose={handleCancelDelete}
@@ -415,7 +458,6 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme, userTags: 
                 theme={theme}
                 isProcessing={isDeleting}
             />
-
             <TransactionFormModal
                 isOpen={isModalOpen}
                 onClose={resetForm}

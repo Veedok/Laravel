@@ -2,24 +2,25 @@ import ApplicationLogo from '@/Components/ApplicationLogo';
 import Dropdown from '@/Components/Dropdown';
 import NavLink from '@/Components/NavLink';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
-import { Link, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import {Link, usePage} from '@inertiajs/react';
+import {useState} from 'react';
 import ThemeToggle from '@/Components/ThemeToggle';
 
-export default function AuthenticatedLayout({ header, children }) {
+export default function AuthenticatedLayout({header, children}) {
     const user = usePage().props.auth.user;
     const theme = usePage().props.theme || 'light';
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
-
     return (
         <div className={`min-h-screen ${theme === 'dark' ? 'dark bg-gray-900' : 'bg-gray-100'}`}>
-            <nav className={`border-b ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-100 bg-white'}`}>
+            <nav
+                className={`border-b ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-100 bg-white'}`}>
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="flex h-16 justify-between">
                         <div className="flex">
                             <div className="flex shrink-0 items-center">
                                 <Link href="/">
-                                    <ApplicationLogo className={`block h-14 w-auto fill-current ${theme === 'dark' ? 'text-gray-300' : 'text-gray-800'}`} />
+                                    <ApplicationLogo
+                                        className={`block h-14 w-auto fill-current ${theme === 'dark' ? 'text-gray-300' : 'text-gray-800'}`}/>
                                 </Link>
                             </div>
 
@@ -38,11 +39,18 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Управление таблицами
                                 </NavLink>
+                                <NavLink
+                                    href={route('charts.index')}
+                                    active={route().current('charts.index')}
+                                    theme={theme}
+                                >
+                                    Статистика
+                                </NavLink>
                             </div>
                         </div>
 
                         <div className="flex items-center gap-4 sm:ms-6 sm:flex sm:items-center">
-                            <ThemeToggle initialTheme={theme} />
+                            <ThemeToggle initialTheme={theme}/>
 
                             <div className="relative ms-3">
                                 <Dropdown theme={theme}>
@@ -75,20 +83,11 @@ export default function AuthenticatedLayout({ header, children }) {
                                     </Dropdown.Trigger>
 
                                     <Dropdown.Content theme={theme}>
-                                        <Dropdown.Link
-                                            href={route('profile.edit')}
-                                            theme={theme}
-                                        >
-                                            Profile
-                                        </Dropdown.Link>
-                                        <Dropdown.Link
-                                            href='/logout'
-                                            method="post"
-                                            as="button"
-                                            theme={theme}
-                                        >
-                                            Log Out
-                                        </Dropdown.Link>
+                                        <div className="flex justify-center">
+                                            <div className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                                                {user.email}
+                                            </div>
+                                        </div>
                                     </Dropdown.Content>
                                 </Dropdown>
                             </div>
@@ -157,12 +156,15 @@ export default function AuthenticatedLayout({ header, children }) {
                         </ResponsiveNavLink>
                     </div>
 
-                    <div className={`border-t ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'} pb-1 pt-4`}>
+                    <div
+                        className={`border-t ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'} pb-1 pt-4`}>
                         <div className="px-4">
-                            <div className={`text-base font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-800'}`}>
+                            <div
+                                className={`text-base font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-800'}`}>
                                 {user.name}
                             </div>
-                            <div className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                            <div
+                                className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
                                 {user.email}
                             </div>
                         </div>
@@ -173,6 +175,12 @@ export default function AuthenticatedLayout({ header, children }) {
                                 theme={theme}
                             >
                                 Profile
+                            </ResponsiveNavLink>
+                            <ResponsiveNavLink
+                                href={route('charts.index')}
+                                theme={theme}
+                            >
+                                Статистика
                             </ResponsiveNavLink>
                             <ResponsiveNavLink
                                 method="post"

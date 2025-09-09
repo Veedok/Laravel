@@ -33,6 +33,6 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('/charts', [ChartController::class, 'index'])->name('charts.index');
-    Route::get('/api/charts/tag-statistics', [ChartController::class, 'getTagStatistics'])->name('api.charts.tag-statistics');
+    Route::post('/api/charts/tag-statistics', [ChartController::class, 'getTagStatistics'])->name('api.charts.tag-statistics');
 });
 require __DIR__.'/auth.php';

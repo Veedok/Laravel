@@ -1,15 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Head, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Doughnut } from 'react-chartjs-2';
-import {
-    Chart as ChartJS,
-    ArcElement,
-    Tooltip,
-    Legend,
-} from 'chart.js';
-
-ChartJS.register(ArcElement, Tooltip, Legend);
+import axios from 'axios';
+import TypeFilter from '@/Components/TypeFilter';
 
 // Расширенная цветовая палитра с разными спокойными тонами
 const INCOME_COLORS = [
@@ -21,6 +14,116 @@ const EXPENSE_COLORS = [
     '#FF6B6B', '#FF9F43', '#F368E0', '#FF7979', '#EE5A24', '#ED4C67',
     '#B53471', '#6F1E51', '#FDA7DF', '#D980FA', '#9980FA', '#5758BB'
 ];
+
+// Кастомный компонент Doughnut chart с управлением hover
+const CustomDoughnutChart = ({ data, options, theme, selectedType, onHover }) => {
+    const canvasRef = useRef(null);
+    const chartRef = useRef(null);
+    const hoveredIndexRef = useRef(null);
+    const containerRef = useRef(null);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined' && canvasRef.current && containerRef.current) {
+            import('chart.js/auto').then(({ Chart }) => {
+                if (chartRef.current) {
+                    chartRef.current.destroy();
+                }
+
+                // Устанавливаем правильные размеры canvas
+                const container = containerRef.current;
+                const dpr = window.devicePixelRatio || 1;
+
+                canvasRef.current.width = container.offsetWidth * dpr;
+                canvasRef.current.height = container.offsetHeight * dpr;
+
+                const ctx = canvasRef.current.getContext('2d');
+                ctx.scale(dpr, dpr);
+
+                const newChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: data,
+                    options: {
+                        ...options,
+                        layout: {
+                            padding: {
+                                top: 10,
+                                bottom: 10,
+                                left: 10,
+                                right: 10
+                            }
+                        },
+                        onHover: (event, elements) => {
+                            if (onHover) {
+                                onHover(event, elements);
+                            }
+
+                            const newHoveredIndex = elements.length > 0 ? elements[0].index : null;
+                            if (hoveredIndexRef.current !== newHoveredIndex) {
+                                hoveredIndexRef.current = newHoveredIndex;
+
+                                if (newChart && newChart.data && newChart.data.datasets) {
+                                    const dataset = newChart.data.datasets[0];
+                                    const colors = selectedType === 'income' ? INCOME_COLORS : EXPENSE_COLORS;
+
+                                    dataset.hoverBackgroundColor = dataset.backgroundColor.map((color, index) => {
+                                        return index === newHoveredIndex
+                                            ? lightenColor(colors[index % colors.length], 20)
+                                            : colors[index % colors.length];
+                                    });
+
+                                    newChart.update('none');
+                                }
+                            }
+                        }
+                    }
+                });
+
+                chartRef.current = newChart;
+
+                // Обработчик ресайза
+                const handleResize = () => {
+                    if (containerRef.current && canvasRef.current) {
+                        const dpr = window.devicePixelRatio || 1;
+                        canvasRef.current.width = containerRef.current.offsetWidth * dpr;
+                        canvasRef.current.height = containerRef.current.offsetHeight * dpr;
+                        const ctx = canvasRef.current.getContext('2d');
+                        ctx.scale(dpr, dpr);
+                        newChart.resize();
+                    }
+                };
+
+                window.addEventListener('resize', handleResize);
+
+                return () => {
+                    window.removeEventListener('resize', handleResize);
+                    if (chartRef.current) {
+                        chartRef.current.destroy();
+                    }
+                };
+            });
+        }
+
+        return () => {
+            if (chartRef.current) {
+                chartRef.current.destroy();
+            }
+        };
+    }, [data, options, theme, selectedType]);
+
+    return (
+        <div ref={containerRef} className="w-full h-full relative">
+            <canvas
+                ref={canvasRef}
+                className="w-full h-full"
+                style={{
+                    display: 'block',
+                    maxWidth: '100%',
+                    maxHeight: '100%'
+                }}
+            />
+        </div>
+    );
+};
 
 // Функция для осветления цвета
 const lightenColor = (color, percent) => {
@@ -40,30 +143,93 @@ export default function ChartsIndex() {
     const [selectedType, setSelectedType] = useState('income');
     const [selectedTable, setSelectedTable] = useState('');
     const [hoveredIndex, setHoveredIndex] = useState(null);
+    const [totals, setTotals] = useState({ income: 0, expense: 0 });
 
+    // Загружаем данные при монтировании и при изменении таблицы
     useEffect(() => {
-        fetchTagStatistics();
-    }, [selectedType, selectedTable]);
+        fetchAllStatistics();
+    }, [selectedTable]); // Добавляем selectedTable в зависимости
 
-    const fetchTagStatistics = async () => {
+    // Загружаем отфильтрованные данные при изменении типа
+    useEffect(() => {
+        if (!loading) {
+            fetchFilteredStatistics();
+        }
+    }, [selectedType]); // Только при изменении типа
+
+    const fetchAllStatistics = async () => {
         try {
             setLoading(true);
-            const params = new URLSearchParams();
-            params.append('type', selectedType);
-            if (selectedTable) {
-                params.append('table_id', selectedTable);
-            }
 
-            const response = await fetch(`/api/charts/tag-statistics?${params}`);
-            const data = await response.json();
+            // Загружаем общую статистику для обоих типов с учетом выбранной таблицы
+            const [incomeResponse, expenseResponse] = await Promise.all([
+                axios.post('/api/charts/tag-statistics', {
+                    type: 'income',
+                    table_id: selectedTable || null
+                }),
+                axios.post('/api/charts/tag-statistics', {
+                    type: 'expense',
+                    table_id: selectedTable || null
+                })
+            ]);
 
-            setTagStatistics(data.tagStatistics);
-            setTotalSum(data.totalSum);
+            setTotals({
+                income: incomeResponse.data.totalSum || 0,
+                expense: expenseResponse.data.totalSum || 0
+            });
+
+            // Загружаем данные для текущего выбранного типа
+            await fetchFilteredStatistics();
+
         } catch (error) {
-            console.error('Error fetching tag statistics:', error);
+            console.error('Error fetching statistics:', error);
+            setTotals({ income: 0, expense: 0 });
+            setTagStatistics([]);
+            setTotalSum(0);
         } finally {
             setLoading(false);
         }
+    };
+
+    const fetchFilteredStatistics = async () => {
+        try {
+            const payload = {
+                type: selectedType,
+                table_id: selectedTable || null
+            };
+
+            const response = await axios.post('/api/charts/tag-statistics', payload, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            setTagStatistics(response.data.tagStatistics || []);
+            setTotalSum(response.data.totalSum || 0);
+
+        } catch (error) {
+            console.error('Error fetching filtered statistics:', error);
+            setTagStatistics([]);
+            setTotalSum(0);
+        }
+    };
+
+    const handleTypeChange = (type) => {
+        setSelectedType(type);
+    };
+
+    const handleTableChange = (tableId) => {
+        setSelectedTable(tableId);
+    };
+
+    const formatCurrency = (value) => {
+        return value.toFixed(2);
+    };
+
+    const getSelectedTableName = () => {
+        if (!selectedTable) return null;
+        return tables.find(table => table.id == selectedTable)?.name;
     };
 
     const chartData = useMemo(() => {
@@ -79,35 +245,29 @@ export default function ChartsIndex() {
                     }),
                     borderWidth: 2,
                     borderColor: theme === 'dark' ? '#2D3748' : '#FFFFFF',
-                    hoverBackgroundColor: tagStatistics.map((tag, index) => {
-                        const baseColor = colors[index % colors.length];
-                        return index === hoveredIndex
-                            ? lightenColor(baseColor, 20)
-                            : baseColor;
-                    }),
                     hoverBorderWidth: 3,
                     hoverBorderColor: theme === 'dark' ? '#4A5568' : '#E2E8F0',
                     hoverOffset: 15,
                 },
             ],
         };
-    }, [tagStatistics, theme, selectedType, hoveredIndex]);
+    }, [tagStatistics, theme, selectedType]); // Убрали hoveredIndex из зависимостей
 
     const chartOptions = useMemo(() => ({
         responsive: true,
         maintainAspectRatio: false,
-        cutout: '60%',
+        cutout: '55%', // Уменьшаем отверстие для лучшего размещения
         plugins: {
             legend: {
                 position: 'right',
                 labels: {
-                    padding: 20,
+                    padding: 15,
                     usePointStyle: true,
                     pointStyle: 'circle',
                     color: theme === 'dark' ? '#D1D5DB' : '#374151',
                     font: {
                         family: "'Inter', 'sans-serif'",
-                        size: 12
+                        size: 11 // Уменьшаем размер шрифта
                     }
                 },
             },
@@ -117,13 +277,13 @@ export default function ChartsIndex() {
                 bodyColor: theme === 'dark' ? '#D1D5DB' : '#4B5563',
                 borderColor: theme === 'dark' ? '#4B5563' : '#E5E7EB',
                 borderWidth: 1,
-                padding: 12,
-                boxPadding: 6,
+                padding: 10,
+                boxPadding: 5,
                 usePointStyle: true,
                 callbacks: {
                     label: function(context) {
                         const value = context.parsed;
-                        const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
                         const percentage = ((value / total) * 100).toFixed(2);
                         return `${context.label}: ${value.toFixed(2)} (${percentage}%)`;
                     }
@@ -132,12 +292,31 @@ export default function ChartsIndex() {
         },
         animation: {
             animateScale: true,
-            animateRotate: true
+            animateRotate: true,
+            duration: 1000
         },
-        onHover: (event, chartElements) => {
-            setHoveredIndex(chartElements.length > 0 ? chartElements[0].index : null);
-        },
+        transitions: {
+            active: {
+                animation: {
+                    duration: 0
+                }
+            }
+        }
     }), [theme]);
+
+
+    const handleChartHover = (event, elements) => {
+        const newHoveredIndex = elements.length > 0 ? elements[0].index : null;
+        setHoveredIndex(newHoveredIndex);
+    };
+
+    const handleListItemHover = (index) => {
+        setHoveredIndex(index);
+    };
+
+    const handleListItemLeave = () => {
+        setHoveredIndex(null);
+    };
 
     const containerClass = theme === 'dark'
         ? 'bg-gray-800 border-gray-700'
@@ -164,10 +343,6 @@ export default function ChartsIndex() {
                 isActive ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
             }`;
 
-    const getSelectedTableName = () => {
-        if (!selectedTable) return null;
-        return tables.find(table => table.id == selectedTable)?.name;
-    };
 
     if (loading) {
         return (
@@ -191,63 +366,40 @@ export default function ChartsIndex() {
                         <div className={`p-6 border-b ${containerClass}`}>
                             <h2 className={`text-2xl font-bold mb-6 ${textClass}`}>
                                 Статистика по тегам
+                                {selectedTable && ` - ${getSelectedTableName()}`}
                             </h2>
 
-                            {/* Переключение типа */}
-                            <div className="flex space-x-2 mb-6">
-                                <button
-                                    onClick={() => setSelectedType('income')}
-                                    className={buttonClass(selectedType === 'income')}
-                                >
-                                    📈 Доходы
-                                </button>
-                                <button
-                                    onClick={() => setSelectedType('expense')}
-                                    className={buttonClass(selectedType === 'expense')}
-                                >
-                                    📉 Расходы
-                                </button>
-                            </div>
+                            {/* Компонент фильтрации по типу */}
+                            <TypeFilter
+                                theme={theme}
+                                selectedType={selectedType}
+                                onTypeChange={handleTypeChange}
+                                incomeTotal={totals.income}
+                                expenseTotal={totals.expense}
+                                formatCurrency={formatCurrency}
+                            />
 
-                            {/* Фильтры */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                                <div>
-                                    <label className={`block text-sm font-medium mb-2 ${textClass}`}>
-                                        Выберите таблицу
-                                    </label>
-                                    <select
-                                        value={selectedTable}
-                                        onChange={(e) => setSelectedTable(e.target.value)}
-                                        className={`w-full p-2 border rounded transition-colors ${
-                                            theme === 'dark'
-                                                ? 'bg-gray-700 border-gray-600 text-white hover:border-gray-500'
-                                                : 'bg-white border-gray-300 text-gray-900 hover:border-gray-400'
-                                        }`}
-                                    >
-                                        <option value="">Все мои таблицы</option>
-                                        {tables.map((table) => (
-                                            <option key={table.id} value={table.id}>
-                                                {table.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                {/* Общая сумма */}
-                                <div className={`p-4 rounded border ${sumCardClass}`}>
-                                    <div className="text-sm font-semibold mb-1">
-                                        {selectedType === 'income' ? 'Общий доход' : 'Общий расход'}
-                                        {selectedTable && ` (${getSelectedTableName()})`}
-                                    </div>
-                                    <div className={`text-2xl font-bold ${
-                                        selectedType === 'income' ? 'text-green-600' : 'text-red-600'
-                                    }`}>
-                                        {selectedType === 'income' ? '+' : '-'}{totalSum.toFixed(2)}
-                                    </div>
-                                    <div className="text-sm opacity-75">
-                                        {tagStatistics.length} тег(ов), {tagStatistics.reduce((acc, tag) => acc + tag.transaction_count, 0)} транзакций
-                                    </div>
-                                </div>
+                            {/* Фильтр по таблице */}
+                            <div className="mb-6">
+                                <label className={`block text-sm font-medium mb-2 ${textClass}`}>
+                                    Выберите таблицу
+                                </label>
+                                <select
+                                    value={selectedTable}
+                                    onChange={(e) => handleTableChange(e.target.value)}
+                                    className={`w-full p-2 border rounded transition-colors ${
+                                        theme === 'dark'
+                                            ? 'bg-gray-700 border-gray-600 text-white hover:border-gray-500'
+                                            : 'bg-white border-gray-300 text-gray-900 hover:border-gray-400'
+                                    }`}
+                                >
+                                    <option value="">Все таблицы</option>
+                                    {tables.map((table) => (
+                                        <option key={table.id} value={table.id}>
+                                            {table.name}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
 
                             {tagStatistics.length === 0 ? (
@@ -270,10 +422,13 @@ export default function ChartsIndex() {
                                             {selectedType === 'income' ? 'Доходы' : 'Расходы'} по тегам
                                             {selectedTable && ` (${getSelectedTableName()})`}
                                         </h3>
-                                        <div className="h-80 relative">
-                                            <Doughnut
+                                        <div className="h-80 relative overflow-visible">
+                                            <CustomDoughnutChart
                                                 data={chartData}
                                                 options={chartOptions}
+                                                theme={theme}
+                                                selectedType={selectedType}
+                                                onHover={handleChartHover}
                                             />
                                         </div>
                                     </div>
@@ -298,8 +453,8 @@ export default function ChartsIndex() {
                                                                     : 'ring-2 ring-blue-300 scale-[1.02]'
                                                                 : ''
                                                         }`}
-                                                        onMouseEnter={() => setHoveredIndex(index)}
-                                                        onMouseLeave={() => setHoveredIndex(null)}
+                                                        onMouseEnter={() => handleListItemHover(index)}
+                                                        onMouseLeave={handleListItemLeave}
                                                     >
                                                         <div className="flex items-center">
                                                             <div

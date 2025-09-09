@@ -11,6 +11,27 @@ import {
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
+// Расширенная цветовая палитра с разными спокойными тонами
+const INCOME_COLORS = [
+    '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57', '#FF9FF3', '#54A0FF',
+    '#00D2D3', '#48DBFB', '#1DD1A1', '#9CEC5B', '#FFEAA7', '#DDA0DD'
+];
+
+const EXPENSE_COLORS = [
+    '#FF6B6B', '#FF9F43', '#F368E0', '#FF7979', '#EE5A24', '#ED4C67',
+    '#B53471', '#6F1E51', '#FDA7DF', '#D980FA', '#9980FA', '#5758BB'
+];
+
+// Функция для осветления цвета
+const lightenColor = (color, percent) => {
+    const num = parseInt(color.replace('#', ''), 16);
+    const amt = Math.round(2.55 * percent);
+    const R = Math.min(255, Math.max(0, (num >> 16) + amt));
+    const G = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + amt));
+    const B = Math.min(255, Math.max(0, (num & 0x0000FF) + amt));
+    return `#${((1 << 24) + (R << 16) + (G << 8) + B).toString(16).slice(1)}`;
+};
+
 export default function ChartsIndex() {
     const { auth, theme, tables } = usePage().props;
     const [tagStatistics, setTagStatistics] = useState([]);
@@ -18,6 +39,7 @@ export default function ChartsIndex() {
     const [loading, setLoading] = useState(true);
     const [selectedType, setSelectedType] = useState('income');
     const [selectedTable, setSelectedTable] = useState('');
+    const [hoveredIndex, setHoveredIndex] = useState(null);
 
     useEffect(() => {
         fetchTagStatistics();
@@ -44,41 +66,60 @@ export default function ChartsIndex() {
         }
     };
 
-    const chartData = useMemo(() => ({
-        labels: tagStatistics.map(tag => tag.name),
-        datasets: [
-            {
-                data: tagStatistics.map(tag => tag.total_sum),
-                backgroundColor: selectedType === 'income'
-                    ? ['#10B981', '#34D399', '#6EE7B7', '#A7F3D0', '#059669', '#065F46', '#047857', '#0D9488']
-                    : ['#EF4444', '#F87171', '#FCA5A5', '#FECACA', '#DC2626', '#B91C1C', '#991B1B', '#7F1D1D'],
-                borderWidth: 2,
-                borderColor: theme === 'dark' ? '#374151' : '#fff',
-            },
-        ],
-    }), [tagStatistics, theme, selectedType]);
+    const chartData = useMemo(() => {
+        const colors = selectedType === 'income' ? INCOME_COLORS : EXPENSE_COLORS;
+
+        return {
+            labels: tagStatistics.map(tag => tag.name),
+            datasets: [
+                {
+                    data: tagStatistics.map(tag => tag.total_sum),
+                    backgroundColor: tagStatistics.map((tag, index) => {
+                        return colors[index % colors.length];
+                    }),
+                    borderWidth: 2,
+                    borderColor: theme === 'dark' ? '#2D3748' : '#FFFFFF',
+                    hoverBackgroundColor: tagStatistics.map((tag, index) => {
+                        const baseColor = colors[index % colors.length];
+                        return index === hoveredIndex
+                            ? lightenColor(baseColor, 20)
+                            : baseColor;
+                    }),
+                    hoverBorderWidth: 3,
+                    hoverBorderColor: theme === 'dark' ? '#4A5568' : '#E2E8F0',
+                    hoverOffset: 15,
+                },
+            ],
+        };
+    }, [tagStatistics, theme, selectedType, hoveredIndex]);
 
     const chartOptions = useMemo(() => ({
         responsive: true,
         maintainAspectRatio: false,
+        cutout: '60%',
         plugins: {
             legend: {
                 position: 'right',
                 labels: {
                     padding: 20,
                     usePointStyle: true,
+                    pointStyle: 'circle',
                     color: theme === 'dark' ? '#D1D5DB' : '#374151',
                     font: {
-                        family: "'Inter', 'sans-serif'"
+                        family: "'Inter', 'sans-serif'",
+                        size: 12
                     }
                 },
             },
             tooltip: {
-                backgroundColor: theme === 'dark' ? '#1F2937' : '#fff',
-                titleColor: theme === 'dark' ? '#F3F4F6' : '#374151',
-                bodyColor: theme === 'dark' ? '#D1D5DB' : '#6B7280',
+                backgroundColor: theme === 'dark' ? '#1F2937' : '#FFFFFF',
+                titleColor: theme === 'dark' ? '#F3F4F6' : '#111827',
+                bodyColor: theme === 'dark' ? '#D1D5DB' : '#4B5563',
                 borderColor: theme === 'dark' ? '#4B5563' : '#E5E7EB',
                 borderWidth: 1,
+                padding: 12,
+                boxPadding: 6,
+                usePointStyle: true,
                 callbacks: {
                     label: function(context) {
                         const value = context.parsed;
@@ -88,6 +129,13 @@ export default function ChartsIndex() {
                     }
                 }
             }
+        },
+        animation: {
+            animateScale: true,
+            animateRotate: true
+        },
+        onHover: (event, chartElements) => {
+            setHoveredIndex(chartElements.length > 0 ? chartElements[0].index : null);
         },
     }), [theme]);
 
@@ -222,8 +270,11 @@ export default function ChartsIndex() {
                                             {selectedType === 'income' ? 'Доходы' : 'Расходы'} по тегам
                                             {selectedTable && ` (${getSelectedTableName()})`}
                                         </h3>
-                                        <div className="h-80">
-                                            <Doughnut data={chartData} options={chartOptions} />
+                                        <div className="h-80 relative">
+                                            <Doughnut
+                                                data={chartData}
+                                                options={chartOptions}
+                                            />
                                         </div>
                                     </div>
 
@@ -233,35 +284,43 @@ export default function ChartsIndex() {
                                             Детализация по тегам
                                         </h3>
                                         <div className="space-y-3">
-                                            {tagStatistics.map((tag) => (
-                                                <div
-                                                    key={tag.id}
-                                                    className={`flex justify-between items-center p-3 rounded border ${cardClass}`}
-                                                >
-                                                    <div className="flex items-center">
-                                                        <div
-                                                            className="w-4 h-4 rounded mr-3"
-                                                            style={{
-                                                                backgroundColor: chartData.datasets[0].backgroundColor[
-                                                                tagStatistics.findIndex(t => t.id === tag.id) %
-                                                                chartData.datasets[0].backgroundColor.length
-                                                                    ]
-                                                            }}
-                                                        />
-                                                        <span className={textClass}>{tag.name}</span>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <div className={`font-semibold ${
-                                                            selectedType === 'income' ? 'text-green-600' : 'text-red-600'
-                                                        }`}>
-                                                            {selectedType === 'income' ? '+' : '-'}{tag.total_sum.toFixed(2)}
+                                            {tagStatistics.map((tag, index) => {
+                                                const colors = selectedType === 'income' ? INCOME_COLORS : EXPENSE_COLORS;
+                                                const tagColor = colors[index % colors.length];
+
+                                                return (
+                                                    <div
+                                                        key={tag.id}
+                                                        className={`flex justify-between items-center p-3 rounded border ${cardClass} transition-all duration-200 ${
+                                                            hoveredIndex === index
+                                                                ? theme === 'dark'
+                                                                    ? 'ring-2 ring-blue-400 scale-[1.02]'
+                                                                    : 'ring-2 ring-blue-300 scale-[1.02]'
+                                                                : ''
+                                                        }`}
+                                                        onMouseEnter={() => setHoveredIndex(index)}
+                                                        onMouseLeave={() => setHoveredIndex(null)}
+                                                    >
+                                                        <div className="flex items-center">
+                                                            <div
+                                                                className="w-4 h-4 rounded mr-3"
+                                                                style={{ backgroundColor: tagColor }}
+                                                            />
+                                                            <span className={textClass}>{tag.name}</span>
                                                         </div>
-                                                        <div className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>
-                                                            {tag.transaction_count} транзакций
+                                                        <div className="text-right">
+                                                            <div className={`font-semibold ${
+                                                                selectedType === 'income' ? 'text-green-600' : 'text-red-600'
+                                                            }`}>
+                                                                {selectedType === 'income' ? '+' : '-'}{tag.total_sum.toFixed(2)}
+                                                            </div>
+                                                            <div className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>
+                                                                {tag.transaction_count} транзакций
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            ))}
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 </div>

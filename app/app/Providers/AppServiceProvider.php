@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\DTO\AbstractDTO;
+use App\DTO\ChartDTO;
 use App\DTO\DestroyDTO;
 use App\DTO\NewTableDTO;
 use App\DTO\Table\AddUserDTO;
@@ -31,7 +32,8 @@ class AppServiceProvider extends ServiceProvider
         GetAndRemoveDTO::class,
         AddUserDTO::class,
         ChangePermissionDTO::class,
-        DelUserDTO::class
+        DelUserDTO::class,
+        ChartDTO::class
     ];
     /**
      * Register any application services.

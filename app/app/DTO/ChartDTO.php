@@ -53,7 +53,7 @@ class ChartDTO extends AbstractDTO
     protected function selfValidate(): void
     {
         /** TODO Если добавятся права на просмотр статистики таблиц то тут сделать проверку */
-        if (!$this->requestUser->tables()->find($this->table)?->exists()){
+        if (isset($this->table) && !$this->requestUser->tables()->find($this->table)?->exists()){
             $this->makeError(Errors::TABLE_NOT_FOUND, 404);
         }
     }

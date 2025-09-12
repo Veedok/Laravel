@@ -14,15 +14,11 @@ class UserController extends Controller
      */
     public function index()
     {
-//        $this->authorize('view_admin_panel');
-
-        $users = User::with('roles')
-            ->select('id', 'name', 'email', 'banned_until', 'created_at')
-            ->latest()
-            ->get();
-
         return Inertia::render('Admin/Users/Index', [
-            'users' => $users
+            'users' => User::with('roles')
+                ->select('id', 'name', 'email', 'banned_until', 'created_at')
+                ->latest()
+                ->get()
         ]);
     }
 
@@ -31,7 +27,6 @@ class UserController extends Controller
      */
     public function ban(Request $request)
     {
-
         $validated = $request->validate([
             'expired_at' => 'nullable|date',
             'comment' => 'nullable|string|max:500'
@@ -43,7 +38,6 @@ class UserController extends Controller
             $validated['comment'] ?? null
         );
         $user->save();
-
         return response()->json(['success' => 'Пользователь забанен.']);
     }
 

@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->alias([
             'banned' => \App\Http\Middleware\CheckBanned::class,
+            'can' => \App\Http\Middleware\CheckPermmisions::class,
         ]);
 
         //

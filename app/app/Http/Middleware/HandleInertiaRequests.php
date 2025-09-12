@@ -30,19 +30,25 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user,
             ],
             'flash' => [
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
             ],
             [
-                'theme' => new class { use ThemeTrait; }->getTheme(),
+                'theme' => new class {
+                    use ThemeTrait;
+                }->getTheme(),
             ],
-            'theme' => new class { use ThemeTrait; }->getTheme(),
+            'admin' => $user->hasRole('admin'),
+            'theme' => new class {
+                use ThemeTrait;
+            }->getTheme(),
         ];
     }
 }

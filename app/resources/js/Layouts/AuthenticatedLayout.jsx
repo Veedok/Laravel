@@ -10,7 +10,6 @@ export default function AuthenticatedLayout({header, children}) {
     const user = usePage().props.auth.user;
     const theme = usePage().props.theme || 'light';
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
-    console.log(usePage().props.theme);
     return (
         <div className={`min-h-screen ${theme === 'dark' ? 'dark bg-gray-900' : 'bg-gray-100'}`}>
             <nav
@@ -41,19 +40,20 @@ export default function AuthenticatedLayout({header, children}) {
                                     Управление таблицами
                                 </NavLink>
                                 <NavLink
-                                    href={route('admin.users.index')}
-                                    active={route().current('admin.users.index')}
-                                    theme={theme}
-                                >
-                                   Flvby
-                                </NavLink>
-                                <NavLink
                                     href={route('charts.index')}
                                     active={route().current('charts.index')}
                                     theme={theme}
                                 >
                                     Статистика
                                 </NavLink>
+                                {usePage().props.admin &&
+                                    <NavLink
+                                    href={route('admin.users.index')}
+                                    active={route().current('admin.users.index')}
+                                    theme={theme}
+                                >
+                                    Админка
+                                </NavLink>}
                             </div>
                         </div>
 
@@ -203,6 +203,13 @@ export default function AuthenticatedLayout({header, children}) {
                             >
                                 Статистика
                             </ResponsiveNavLink>
+                            {usePage().props.admin &&
+                                <ResponsiveNavLink
+                                    href={route('admin.users.index')}
+                                    theme={theme}
+                                >
+                                    Админка
+                                </ResponsiveNavLink>}
                             <ResponsiveNavLink
                                 method="post"
                                 href={route('logout')}

@@ -40,8 +40,9 @@ class HandleInertiaRequests extends Middleware
                 'error' => $request->session()->get('error'),
             ],
             [
-                'theme' => (new class { use \App\Traits\ThemeTrait; })->getTheme(),
-            ]
+                'theme' => new class { use ThemeTrait; }->getTheme(),
+            ],
+            'theme' => new class { use ThemeTrait; }->getTheme(),
         ];
     }
 }

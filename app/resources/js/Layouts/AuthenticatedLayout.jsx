@@ -10,6 +10,7 @@ export default function AuthenticatedLayout({header, children}) {
     const user = usePage().props.auth.user;
     const theme = usePage().props.theme || 'light';
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
+    console.log(usePage().props.theme);
     return (
         <div className={`min-h-screen ${theme === 'dark' ? 'dark bg-gray-900' : 'bg-gray-100'}`}>
             <nav
@@ -38,6 +39,13 @@ export default function AuthenticatedLayout({header, children}) {
                                     theme={theme}
                                 >
                                     Управление таблицами
+                                </NavLink>
+                                <NavLink
+                                    href={route('admin.users.index')}
+                                    active={route().current('admin.users.index')}
+                                    theme={theme}
+                                >
+                                   Flvby
                                 </NavLink>
                                 <NavLink
                                     href={route('charts.index')}
@@ -83,11 +91,24 @@ export default function AuthenticatedLayout({header, children}) {
                                     </Dropdown.Trigger>
 
                                     <Dropdown.Content theme={theme}>
-                                        <div className="flex justify-center">
-                                            <div className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                                        <div className="flex justify-center" style={{
+                                            height: '64px',
+                                            padding: '16px'
+                                        }}
+                                        >
+                                            <div
+                                                className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
                                                 {user.email}
                                             </div>
                                         </div>
+                                        <Dropdown.Link
+                                            href='/logout'
+                                            method="post"
+                                            as="button"
+                                            theme={theme}
+                                        >
+                                            Log Out
+                                        </Dropdown.Link>
                                     </Dropdown.Content>
                                 </Dropdown>
                             </div>

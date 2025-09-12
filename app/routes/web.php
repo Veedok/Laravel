@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\ChartController;
 use App\Http\Controllers\PermissionsController;
 use App\Http\Controllers\TablesController;
@@ -34,5 +35,12 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('/charts', [ChartController::class, 'index'])->name('charts.index');
     Route::post('/api/charts/tag-statistics', [ChartController::class, 'getTagStatistics'])->name('api.charts.tag-statistics');
+});
+
+// Admin routes
+Route::middleware(['auth', 'can:view_admin_panel'])->prefix('admin')->group(function () {
+    Route::get('/users', [UserController::class, 'index'])->name('admin.users.index');
+    Route::post('/users/ban', [UserController::class, 'ban'])->name('admin.users.ban');
+    Route::post('/users/unban', [UserController::class, 'unban'])->name('admin.users.unban');
 });
 require __DIR__.'/auth.php';

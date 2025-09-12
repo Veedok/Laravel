@@ -2,25 +2,29 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Closure;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticate;
 use Illuminate\Notifications\Notifiable;
 use JsonException;
+use Spatie\Permission\Traits\HasRoles;
 
 /** Модель пользователя
  * @property mixed $pivot
  * @property mixed|null $tables
  * @property mixed $id
  * @property mixed $theme
+ * @property mixed $is_banned
  * @method static find(int|null $user)
  */
 class User extends Authenticate
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasRoles;
 
     /**
      * Изменяемые поля
@@ -31,6 +35,7 @@ class User extends Authenticate
         'email',
         'password',
         'theme',
+        'banned_until'
     ];
 
     /**
@@ -111,5 +116,41 @@ class User extends Authenticate
     public function tags()
     {
         return $this->hasMany(Tag::class);
+    }
+
+    public function bans(): HasMany
+    {
+        return $this->hasMany(Ban::class);
+    }
+
+    /**
+     * Аксессор для проверки забанен ли пользователь
+     */
+    protected function isBanned(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->banned_until && $this->banned_until->gt(now())
+        );
+    }
+
+    /**
+     * Забанить пользователя
+     */
+    public function ban($until = null, $bannedById = null, $comment = null): void
+    {
+        $this->update(['banned_until' => $until]);
+        $this->bans()->create([
+            'created_by' => $bannedById ?? auth()->id(),
+            'comment' => $comment,
+            'expired_at' => $until,
+        ]);
+    }
+
+    /**
+     * Разбанить пользователя
+     */
+    public function unban(): void
+    {
+        $this->update(['banned_until' => '1970-01-01 00:00:00']);
     }
 }

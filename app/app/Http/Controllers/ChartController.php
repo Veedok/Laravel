@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\DTO\ChartDTO;
 use App\Services\Charts;
 use Illuminate\Http\JsonResponse;
+use Inertia\Inertia;
 use Inertia\Response;
 
 /** Контроллер для получения графиков */
@@ -26,7 +27,7 @@ class ChartController extends Controller
      */
     public function index(): Response
     {
-        return $this->charts->index();
+        return Inertia::render('Charts/Index', $this->charts->index());
     }
 
     /**

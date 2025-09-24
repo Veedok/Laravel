@@ -15,6 +15,10 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
+        $middleware->alias([
+            'banned' => \App\Http\Middleware\CheckBanned::class,
+            'can' => \App\Http\Middleware\CheckPermmisions::class,
+        ]);
 
         //
     })

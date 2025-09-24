@@ -5,17 +5,15 @@ namespace App\Services;
 use App\DTO\ChartDTO;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
-use Inertia\Inertia;
-use Inertia\Response;
 
 /** Сервис для работы с графиками */
 class Charts
 {
     /**
      * Получение страницы графиков
-     * @return Response
+     * @return array
      */
-    public function index(): Response
+    public function index(): array
     {
         /** @var User $user */
         $user = auth()->user();
@@ -25,10 +23,10 @@ class Charts
             ->select('tables.id', 'tables.name')
             ->orderBy('tables.name')
             ->get();
-        return Inertia::render('Charts/Index', [
+         return [
             'theme' => $user->theme,
             'tables' => $tables
-        ]);
+        ];
     }
 
     /**

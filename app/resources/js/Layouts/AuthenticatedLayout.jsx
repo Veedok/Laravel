@@ -46,6 +46,14 @@ export default function AuthenticatedLayout({header, children}) {
                                 >
                                     Статистика
                                 </NavLink>
+                                {usePage().props.admin &&
+                                    <NavLink
+                                    href={route('admin.users.index')}
+                                    active={route().current('admin.users.index')}
+                                    theme={theme}
+                                >
+                                    Админка
+                                </NavLink>}
                             </div>
                         </div>
 
@@ -83,11 +91,24 @@ export default function AuthenticatedLayout({header, children}) {
                                     </Dropdown.Trigger>
 
                                     <Dropdown.Content theme={theme}>
-                                        <div className="flex justify-center">
-                                            <div className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                                        <div className="flex justify-center" style={{
+                                            height: '64px',
+                                            padding: '16px'
+                                        }}
+                                        >
+                                            <div
+                                                className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
                                                 {user.email}
                                             </div>
                                         </div>
+                                        <Dropdown.Link
+                                            href='/logout'
+                                            method="post"
+                                            as="button"
+                                            theme={theme}
+                                        >
+                                            Log Out
+                                        </Dropdown.Link>
                                     </Dropdown.Content>
                                 </Dropdown>
                             </div>
@@ -182,6 +203,13 @@ export default function AuthenticatedLayout({header, children}) {
                             >
                                 Статистика
                             </ResponsiveNavLink>
+                            {usePage().props.admin &&
+                                <ResponsiveNavLink
+                                    href={route('admin.users.index')}
+                                    theme={theme}
+                                >
+                                    Админка
+                                </ResponsiveNavLink>}
                             <ResponsiveNavLink
                                 method="post"
                                 href={route('logout')}

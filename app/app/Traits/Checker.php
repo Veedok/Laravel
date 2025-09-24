@@ -2,13 +2,19 @@
 
 namespace App\Traits;
 
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 
 /** Трейт валидации */
 trait Checker
 {
-
+    const array MODEL_MAP = [
+        'user' => [
+            'class' => User::class,
+            'error' => "Пользователь не найден"
+        ]
+    ];
 
     /** @var array Ошибки проверки данных */
     protected array $error = [];
@@ -60,5 +66,19 @@ trait Checker
     public function getErrorsMessages(): array
     {
         return $this->error['messages'] ?? [];
+    }
+
+    protected function findModel($id, $model): mixed
+    {
+        $obj = null;
+        if (array_key_exists($model, self::MODEL_MAP)) {
+            $obj = self::MODEL_MAP[$model]['class']::find($id);
+            if (empty($obj)) {
+                $this->makeError(self::MODEL_MAP[$model]['error'], 404);
+            }
+        } else {
+            $this->makeError('Wrong Model', 500);
+        }
+        return $obj;
     }
 }

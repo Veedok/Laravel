@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\User;
 use App\Traits\ThemeTrait;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -31,7 +32,8 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $user = $request->user();
-        return [
+
+        $sharedData = [
             ...parent::share($request),
             'auth' => [
                 'user' => $user,
@@ -40,15 +42,21 @@ class HandleInertiaRequests extends Middleware
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
             ],
-            [
-                'theme' => new class {
-                    use ThemeTrait;
-                }->getTheme(),
-            ],
-            'admin' => $user->hasRole('admin'),
-            'theme' => new class {
-                use ThemeTrait;
-            }->getTheme(),
+            'admin' => $user instanceof User ? $user->hasRole('admin') : false,
+            'theme' => (new class { use ThemeTrait; })->getTheme(),
         ];
+
+        // Правильное получение ошибок из сессии
+        $sessionErrors = $request->session()->get('errors');
+
+        if ($sessionErrors instanceof \Illuminate\Support\ViewErrorBag) {
+            $sharedData['errors'] = $sessionErrors->getBag('default')->toArray();
+        } elseif (is_array($sessionErrors)) {
+            $sharedData['errors'] = $sessionErrors;
+        } else {
+            $sharedData['errors'] = (object) [];
+        }
+
+        return $sharedData;
     }
 }

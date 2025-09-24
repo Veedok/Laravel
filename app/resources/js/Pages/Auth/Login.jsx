@@ -1,7 +1,6 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import GuestLayout from '@/Layouts/GuestLayout';
 import ApplicationLogo from '@/Components/ApplicationLogo';
-import { usePage } from '@inertiajs/react';
 
 export default function Login({ status, canResetPassword }) {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -10,7 +9,11 @@ export default function Login({ status, canResetPassword }) {
         remember: false,
     });
 
-    const theme = usePage().props.theme || 'light';
+    const { props } = usePage();
+    const theme = props.theme || 'light';
+
+    console.log('Form errors:', errors);
+    console.log('Page errors:', props.errors);
 
     const submit = (e) => {
         e.preventDefault();
@@ -30,6 +33,13 @@ export default function Login({ status, canResetPassword }) {
                     />
                 </div>
             </div>
+
+            {/* Общие ошибки из flash */}
+            {props.flash?.error && (
+                <div className="auth-error-message">
+                    {props.flash.error}
+                </div>
+            )}
 
             {status && (
                 <div className="status-success">
@@ -53,8 +63,11 @@ export default function Login({ status, canResetPassword }) {
                         onChange={(e) => setData('email', e.target.value)}
                         placeholder="your@email.com"
                     />
-                    {errors.email && (
-                        <div className="auth-error">{errors.email}</div>
+                    {/* Ошибки email из формы ИЛИ из сессии */}
+                    {(errors.email || props.errors?.email) && (
+                        <div className="auth-error">
+                            {errors.email || props.errors?.email}
+                        </div>
                     )}
                 </div>
 
@@ -72,6 +85,7 @@ export default function Login({ status, canResetPassword }) {
                         onChange={(e) => setData('password', e.target.value)}
                         placeholder="Введите ваш пароль"
                     />
+                    {/* Ошибки password */}
                     {errors.password && (
                         <div className="auth-error">{errors.password}</div>
                     )}

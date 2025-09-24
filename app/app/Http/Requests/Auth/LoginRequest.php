@@ -50,6 +50,13 @@ class LoginRequest extends FormRequest
                 'email' => trans('auth.failed'),
             ]);
         }
+        if($ban = auth()->user()?->getBannString()){
+            session()->flush();
+            RateLimiter::hit($this->throttleKey());
+            throw ValidationException::withMessages([
+                'email' => $ban,
+            ]);
+        }
 
         RateLimiter::clear($this->throttleKey());
     }

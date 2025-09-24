@@ -1,9 +1,12 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import {Head, usePage} from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import axios from 'axios';
-import {useState} from 'react';
+import { useState } from 'react';
+import UsersMobileCards from "@/Components/UsersMobileCards.jsx";
+import BanModal from "@/Components/BanModal.jsx";
+import UsersTable from "@/Components/UsersTable.jsx";
 
-export default function UsersIndex({users}) {
+export default function UsersIndex({ users }) {
     const theme = usePage().props.theme || 'light';
     const [userList, setUserList] = useState(users);
     const [loading, setLoading] = useState(false);
@@ -62,16 +65,15 @@ export default function UsersIndex({users}) {
 
             const updatedUsers = userList.map(user =>
                 user.id === selectedUser.id
-                    ? {...user, banned_until: expiredAt}
+                    ? { ...user, banned_until: expiredAt }
                     : user
             );
             setUserList(updatedUsers);
-
-            closeBanModal();
         } catch (err) {
-            setError(err.response?.data?.message || 'Ошибка при бане пользователя');
+            setError(err.response?.data?.message || err.response?.data?.errors || 'Ошибка при бане пользователя');
         } finally {
             setLoading(false);
+            closeBanModal();
         }
     };
 
@@ -88,7 +90,7 @@ export default function UsersIndex({users}) {
 
             const updatedUsers = userList.map(user =>
                 user.id === userId
-                    ? {...user, banned_until: '1970-01-01 00:00:00'}
+                    ? { ...user, banned_until: '1970-01-01 00:00:00' }
                     : user
             );
             setUserList(updatedUsers);
@@ -107,161 +109,55 @@ export default function UsersIndex({users}) {
         return bannedUntil > now;
     };
 
-    // Классы для тем
-    const containerClass = theme === 'dark'
-        ? 'bg-gray-900 text-white'
-        : 'bg-white text-gray-900';
-
-    const cardClass = theme === 'dark'
-        ? 'bg-gray-800 border-gray-700'
-        : 'bg-white border-gray-200';
-
-    const buttonBanClass = theme === 'dark'
-        ? 'bg-red-600 hover:bg-red-700 text-white'
-        : 'bg-red-500 hover:bg-red-600 text-white';
-
-    const buttonUnbanClass = theme === 'dark'
-        ? 'bg-green-600 hover:bg-green-700 text-white'
-        : 'bg-green-500 hover:bg-green-600 text-white';
-
-    const modalClass = theme === 'dark'
-        ? 'bg-gray-800 text-white'
-        : 'bg-white text-gray-900';
-
-    const inputClass = theme === 'dark'
-        ? 'bg-gray-700 border-gray-600 text-white'
-        : 'bg-white border-gray-300 text-gray-900';
+    // Пропсы для дочерних компонентов
+    const commonProps = {
+        users: userList,
+        loading,
+        theme,
+        onBan: openBanModal,
+        onUnban: handleUnban,
+        isBanned
+    };
 
     return (
         <AuthenticatedLayout>
-            <Head title="Управление пользователями"/>
+            <Head title="Управление пользователями" />
 
             <div className="py-4 md:py-8">
                 <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
-                    <div className={`rounded-lg shadow-sm ${containerClass}`}>
+                    <div className={`rounded-xl shadow-lg ${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'}`}>
                         <div className="p-4 md:p-6">
-                            <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">Управление пользователями</h1>
-
-                            {error && (
-                                <div
-                                    className={`border rounded mb-4 p-3 ${theme === 'dark' ? 'bg-red-900 border-red-700 text-red-200' : 'bg-red-100 border-red-400 text-red-700'}`}>
-                                    {error}
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 md:mb-8">
+                                <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
+                                    Управление пользователями
+                                </h1>
+                                <div className="text-sm text-gray-500 mt-2 sm:mt-0">
+                                    Всего пользователей: <span className="font-semibold text-blue-500">{userList.length}</span>
                                 </div>
-                            )}
-
-                            {success && (
-                                <div
-                                    className={`border rounded mb-4 p-3 ${theme === 'dark' ? 'bg-green-900 border-green-700 text-green-200' : 'bg-green-100 border-green-400 text-green-700'}`}>
-                                    {success}
-                                </div>
-                            )}
-
-                            {/* Десктопная версия - таблица */}
-                            <div className="hidden md:block overflow-x-auto">
-                                <table className="min-w-full">
-                                    <thead>
-                                    <tr className={theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'}>
-                                        <th className="px-4 py-2">ID</th>
-                                        <th className="px-4 py-2">Имя</th>
-                                        <th className="px-4 py-2">Email</th>
-                                        <th className="px-4 py-2">Роль</th>
-                                        <th className="px-4 py-2">Статус</th>
-                                        <th className="px-4 py-2">Дата регистрации</th>
-                                        <th className="px-4 py-2">Действия</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    {userList.map((user) => (
-                                        <tr key={user.id}
-                                            className={theme === 'dark' ? 'border-gray-700 hover:bg-gray-800' : 'border-gray-200 hover:bg-gray-50'}>
-                                            <td className="border px-4 py-2">{user.id}</td>
-                                            <td className="border px-4 py-2">{user.name}</td>
-                                            <td className="border px-4 py-2">{user.email}</td>
-                                            <td className="border px-4 py-2">{user.roles?.[0]?.name || 'user'}</td>
-                                            <td className="border px-4 py-2">
-                                                    <span
-                                                        className={`px-2 py-1 rounded text-xs ${isBanned(user) ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
-                                                        {isBanned(user) ? 'Заблокирован ' + (!user.banned_until ? "навсегда" : "до " + user.banned_until.toLocaleString()): 'Активен'}
-                                                    </span>
-                                            </td>
-                                            <td className="border px-4 py-2">
-                                                {new Date(user.created_at).toLocaleDateString()}
-                                            </td>
-                                            <td className="border px-4 py-2">
-                                                {isBanned(user) ? (
-                                                    <button
-                                                        onClick={() => handleUnban(user.id)}
-                                                        disabled={loading}
-                                                        className={`px-3 py-1 rounded text-sm ${buttonUnbanClass}`}
-                                                    >
-                                                        Разбанить
-                                                    </button>
-                                                ) : (
-                                                    <button
-                                                        onClick={() => openBanModal(user)}
-                                                        disabled={loading}
-                                                        className={`px-3 py-1 rounded text-sm ${buttonBanClass}`}
-                                                    >
-                                                        Забанить
-                                                    </button>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    </tbody>
-                                </table>
                             </div>
 
-                            {/* Мобильная версия - карточки */}
-                            <div className="md:hidden space-y-3">
-                                {userList.map((user) => (
-                                    <div key={user.id} className={`p-4 rounded-lg border ${cardClass}`}>
-                                        <div className="grid grid-cols-2 gap-2 mb-3">
-                                            <div className="text-sm text-gray-500">ID:</div>
-                                            <div>{user.id}</div>
+                            {/* Уведомления */}
+                            <Notification
+                                type="error"
+                                message={error}
+                                theme={theme}
+                                onClose={() => setError('')}
+                            />
+                            <Notification
+                                type="success"
+                                message={success}
+                                theme={theme}
+                                onClose={() => setSuccess('')}
+                            />
 
-                                            <div className="text-sm text-gray-500">Имя:</div>
-                                            <div>{user.name}</div>
+                            {/* Десктопная таблица */}
+                            <div className="hidden md:block">
+                                <UsersTable {...commonProps} />
+                            </div>
 
-                                            <div className="text-sm text-gray-500">Email:</div>
-                                            <div>{user.email}</div>
-
-                                            <div className="text-sm text-gray-500">Роль:</div>
-                                            <div>{user.roles?.[0]?.name || 'user'}</div>
-
-                                            <div className="text-sm text-gray-500">Статус:</div>
-                                            <div>
-                                                <span
-                                                    className={`px-2 py-1 rounded text-xs ${isBanned(user) ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
-                                                    {isBanned(user) ? "Заблокирован " + (!user.banned_until ? "навсегда" : "до " + user.banned_until.toLocaleString()): 'Активен'}
-                                                </span>
-                                            </div>
-
-                                            <div className="text-sm text-gray-500">Регистрация:</div>
-                                            <div>{new Date(user.created_at).toLocaleDateString()}</div>
-                                        </div>
-
-                                        <div className="flex justify-center">
-                                            {isBanned(user) ? (
-                                                <button
-                                                    onClick={() => handleUnban(user.id)}
-                                                    disabled={loading}
-                                                    className={`px-4 py-2 rounded ${buttonUnbanClass}`}
-                                                >
-                                                    Разбанить
-                                                </button>
-                                            ) : (
-                                                <button
-                                                    onClick={() => openBanModal(user)}
-                                                    disabled={loading}
-                                                    className={`px-4 py-2 rounded ${buttonBanClass}`}
-                                                >
-                                                    Забанить
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
+                            {/* Мобильные карточки */}
+                            <div className="md:hidden">
+                                <UsersMobileCards {...commonProps} />
                             </div>
                         </div>
                     </div>
@@ -269,65 +165,65 @@ export default function UsersIndex({users}) {
             </div>
 
             {/* Модальное окно бана */}
-            {showBanModal && selectedUser && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                    <div className={`rounded-lg p-6 max-w-md w-full ${modalClass}`}>
-                        <h2 className="text-lg font-bold mb-4">
-                            Блокировка пользователя
-                        </h2>
-
-                        <p className="mb-4">
-                            Вы точно хотите заблокировать пользователя <strong>{selectedUser.email}</strong>?
-                        </p>
-
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium mb-2">
-                                Срок блокировки:
-                            </label>
-                            <select
-                                value={banDuration}
-                                onChange={(e) => setBanDuration(e.target.value)}
-                                className={`w-full p-2 border rounded ${inputClass}`}
-                            >
-                                <option value="1hour">1 час</option>
-                                <option value="1day">1 день</option>
-                                <option value="1week">1 неделя</option>
-                                <option value="1month">1 месяц</option>
-                                <option value="permanent">Навсегда</option>
-                            </select>
-                        </div>
-
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium mb-2">
-                                Причина (опционально):
-                            </label>
-                            <textarea
-                                value={banComment}
-                                onChange={(e) => setBanComment(e.target.value)}
-                                rows={3}
-                                className={`w-full p-2 border rounded ${inputClass}`}
-                                placeholder="Укажите причину блокировки"
-                            />
-                        </div>
-
-                        <div className="flex gap-3 justify-end">
-                            <button
-                                onClick={closeBanModal}
-                                className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-100"
-                            >
-                                Отмена
-                            </button>
-                            <button
-                                onClick={() => handleBan(banDuration)}
-                                disabled={loading}
-                                className={`px-4 py-2 rounded ${buttonBanClass}`}
-                            >
-                                {loading ? 'Загрузка...' : 'Заблокировать'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <BanModal
+                isOpen={showBanModal}
+                user={selectedUser}
+                theme={theme}
+                loading={loading}
+                banDuration={banDuration}
+                banComment={banComment}
+                onDurationChange={setBanDuration}
+                onCommentChange={setBanComment}
+                onConfirm={handleBan}
+                onCancel={closeBanModal}
+            />
         </AuthenticatedLayout>
     );
 }
+
+// Компонент уведомления
+const Notification = ({ type, message, theme, onClose }) => {
+    if (!message) return null;
+
+    const config = {
+        error: {
+            bg: theme === 'dark' ? 'bg-red-900/20 border-red-500' : 'bg-red-50 border-red-400',
+            text: theme === 'dark' ? 'text-red-200' : 'text-red-700',
+            icon: (
+                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+            )
+        },
+        success: {
+            bg: theme === 'dark' ? 'bg-green-900/20 border-green-500' : 'bg-green-50 border-green-400',
+            text: theme === 'dark' ? 'text-green-200' : 'text-green-700',
+            icon: (
+                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+            )
+        }
+    };
+
+    const { bg, text, icon } = config[type];
+
+    return (
+        <div className={`rounded-lg mb-6 p-4 border-l-4 ${bg} ${text}`}>
+            <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                    {icon}
+                    {message}
+                </div>
+                <button
+                    onClick={onClose}
+                    className="ml-4 hover:opacity-70 transition-opacity"
+                >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    );
+};

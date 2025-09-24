@@ -2,52 +2,43 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\DTO\Admin\BanDTO;
+use App\DTO\Admin\UnbanDTO;
 use App\Http\Controllers\Controller;
-use App\Models\User;
-use Illuminate\Http\Request;
-use Inertia\Inertia;
+use App\Services\Admin\Ban;
+use Illuminate\Http\JsonResponse;
+use Inertia\Response;
 
 class UserController extends Controller
 {
+
+    public function __construct(private readonly Ban $ban)
+    {
+
+    }
+
     /**
      * Display a listing of the users.
      */
-    public function index()
+    public function index(): Response
     {
-        return Inertia::render('Admin/Users/Index', [
-            'users' => User::with('roles')
-                ->select('id', 'name', 'email', 'banned_until', 'created_at')
-                ->latest()
-                ->get()
-        ]);
+        return $this->ban->adminPage();
+
     }
 
     /**
      * Ban the specified user.
      */
-    public function ban(Request $request)
+    public function ban(BanDTO $request): JsonResponse
     {
-        $validated = $request->validate([
-            'expired_at' => 'nullable|date',
-            'comment' => 'nullable|string|max:500'
-        ]);
-        $user = User::find($request->get('user_id'));
-        $user->ban(
-            $validated['expired_at'] ? now()->parse($validated['expired_at']) : null,
-            auth()->id(),
-            $validated['comment'] ?? null
-        );
-        $user->save();
-        return response()->json(['success' => 'Пользователь забанен.']);
+        return $this->ban->banUser($request);
     }
 
     /**
      * Unban the specified user.
      */
-    public function unban(Request $request)
+    public function unban(UnbanDTO $request): JsonResponse
     {
-        $user = User::find($request->get('user_id'));
-        $user->unban();
-        return response()->json(['success' => 'Пользователь разбанен.']);
+        return $this->ban->unbanUser($request);
     }
 }

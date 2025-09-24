@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Closure;
 use Database\Factories\UserFactory;
@@ -19,6 +20,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property mixed $id
  * @property mixed $theme
  * @property mixed $is_banned
+ * @property mixed $email
  * @method static find(int|null $user)
  */
 class User extends Authenticate
@@ -129,8 +131,17 @@ class User extends Authenticate
     protected function isBanned(): Attribute
     {
         return Attribute::make(
-            get: fn () => $this->banned_until && $this->banned_until->gt(now())
+            get: fn () => !$this->banned_until || new Carbon($this->banned_until)->gt(now())
         );
+    }
+
+    public function getBannString()
+    {
+        $result = null;
+        if ($this->is_banned) {
+           $result = !isset($this->banned_until) ? 'Ваш аккаунт заблокирован навсегда,разблокировка возможна при личном обращении в тех.поддержку' : sprintf("Ваш аккаунт заблокирован до %s", new Carbon($this->banned_until)->timezone('Europe/Moscow'));
+        }
+        return $result;
     }
 
     /**

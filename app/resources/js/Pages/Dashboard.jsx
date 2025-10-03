@@ -1,7 +1,9 @@
+// Dashboard.jsx
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {Head} from '@inertiajs/react';
 import PayTable from '@/Components/PayTable.jsx';
 import CarouselButtons from "@/Components/CarouselButtons.jsx";
+import TableEncryptionControls from "@/Pages/Crypto/EncryptionControls.jsx";
 import React, {useState, useEffect} from "react";
 import axios from 'axios';
 
@@ -54,19 +56,24 @@ const NoTablesMessage = ({onAddTable}) => (
     </div>
 );
 
-export default function Dashboard({theme, tables: initialTables}) {
+export default function Dashboard({ theme, tables: initialTables, auth }) {
     const [data, setData] = useState({
         transactions: [],
         userTags: [],
         permission: {
             is_owner: false,
             permissions: []
-        }
+        },
+        is_encrypted: false,
+        tableKey: null,
+        salt: null
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [tables, setTables] = useState(initialTables);
     const [activeTableId, setActiveTableId] = useState(null);
+    const [isTableEncrypted, setIsTableEncrypted] = useState(false);
+    const [isTableLocked, setIsTableLocked] = useState(true);
 
     const hasTables = Object.keys(tables).length > 0;
 
@@ -82,7 +89,10 @@ export default function Dashboard({theme, tables: initialTables}) {
             fetchTransactions(activeTableId);
         }
     }, [activeTableId]);
-
+    const handleEncryptionChange = (encrypted, locked) => {
+        setIsTableEncrypted(encrypted);
+        setIsTableLocked(locked);
+    };
     const fetchTransactions = async (tableId) => {
         try {
             setLoading(true);
@@ -90,7 +100,35 @@ export default function Dashboard({theme, tables: initialTables}) {
             const response = await axios.post(route('tableData'), {
                 tableId: tableId
             });
-            setData(response.data);
+
+            const serverData = response.data;
+            setData(serverData);
+
+            // Синхронизируем состояние шифрования с сервером
+            setIsTableEncrypted(serverData.is_encrypted || false);
+
+            // Проверяем, есть ли у нас ключ для расшифровки
+            if (serverData.is_encrypted) {
+                // Пробуем найти ключ в localStorage
+                const hasLocalKey = localStorage.getItem(`table_${tableId}_dataKey`);
+
+                // ИЛИ если сервер прислал ключ и соль - сохраняем их
+                if (serverData.tableKey && serverData.salt) {
+                    // Сохраняем серверные ключи в localStorage
+                    localStorage.setItem(`table_${tableId}_dataKey`, serverData.tableKey);
+                    localStorage.setItem(`table_${tableId}_salt`, serverData.salt);
+                    setIsTableLocked(false);
+                } else {
+                    setIsTableLocked(!hasLocalKey);
+                }
+            } else {
+                setIsTableLocked(false);
+                // Очищаем ключи если таблица не зашифрована
+                localStorage.removeItem(`table_${tableId}_dataKey`);
+                localStorage.removeItem(`table_${tableId}_salt`);
+                localStorage.removeItem(`table_${tableId}_encryptedKeys`);
+            }
+
         } catch (err) {
             setError('Не удалось загрузить данные. Пожалуйста, попробуйте позже.');
         } finally {
@@ -170,12 +208,26 @@ export default function Dashboard({theme, tables: initialTables}) {
             }
         >
             <Head title="Таблица Баланса"/>
+
             <CarouselButtons
                 items={tables}
                 onItemClick={handleItemClick}
                 onAddItem={handleAddItem}
                 theme={theme}
                 activeTableId={activeTableId}
+            />
+
+            {/* Добавляем контролы шифрования */}
+            <TableEncryptionControls
+                theme={theme}
+                isOwner={data.permission?.is_owner}
+                tableId={activeTableId}
+                currentUser={auth.user}
+                onEncryptionChange={handleEncryptionChange}
+                tableTransactions={data.transactions}
+                isEncryptedFromServer={data.is_encrypted}
+                serverTableKey={data.tableKey}  // передаем ключ с сервера
+                serverSalt={data.salt}          // передаем соль с сервера
             />
 
             {!hasTables ? (
@@ -191,6 +243,8 @@ export default function Dashboard({theme, tables: initialTables}) {
                     permissions={data.permission}
                     theme={theme}
                     userTags={data.userTags}
+                    isEncrypted={isTableEncrypted} // используем синхронизированное состояние
+                    isLocked={isTableLocked}
                 />
             )}
         </AuthenticatedLayout>

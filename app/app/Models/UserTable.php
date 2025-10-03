@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
+use Illuminate\Support\Facades\DB;
 use JsonException;
 
 /**
@@ -25,7 +26,10 @@ class UserTable extends Pivot
         'permissions' => 'array',
         'is_owner' => 'boolean'
     ];
-
+    protected $fillable = [
+        'key',
+        'salt'
+    ];
     /**
      * Проверка прав пользователя
      * @param string $permission
@@ -57,5 +61,13 @@ class UserTable extends Pivot
     public function table(): BelongsTo
     {
         return $this->belongsTo(Table::class);
+    }
+
+    public function safeSave()
+    {
+        return DB::table($this->table)
+            ->where('user_id', $this->user_id)
+            ->where('table_id', $this->table_id)
+            ->update($this->getAttributes());
     }
 }

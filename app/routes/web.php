@@ -8,11 +8,16 @@ use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::get('/', function () {
     return redirect()->route('login');
 });
+Route::get('/test-encryption', function () {
+    return Inertia::render('Crypto/TestEncryptionPage');
+})->name('test-encryption');
 Route::middleware(['banned', 'auth', 'verified'])->group(function () {
+    Route::post('/cryptoData', [TablesController::class, 'crypto'])->name('cryptoTable');
     Route::get('/dashboard', [TablesController::class, 'mainPage'])->name('dashboard');
     Route::put('/table', [TablesController::class, 'newTable']);
     Route::post('/table', [TablesController::class, 'getTableData'])->name('tableData');

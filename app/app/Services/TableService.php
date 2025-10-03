@@ -69,7 +69,10 @@ class TableService
         $result = [
             'permission' => $table->getUserPermissions($request->requestUser->id),
             'userTags' => $request->requestUser->tags()->pluck('name')->toArray(),
-            'transactions' => []
+            'transactions' => [],
+            "is_encrypted"=> true,
+            "tableKey" => $table->userTables()->where('user_id', $request->requestUser->id)->first()->key,
+            "salt" => $table->userTables()->where('user_id', $request->requestUser->id)->first()->salt
         ];
         foreach ($table->transactions as $item) {
             $result['transactions'][] = [

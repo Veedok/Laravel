@@ -46,6 +46,13 @@ export default function AuthenticatedLayout({header, children}) {
                                 >
                                     Статистика
                                 </NavLink>
+                                <NavLink
+                                    href={route('test-encryption')}
+                                    active={route().current('test-encryption')}
+                                    theme={theme}
+                                >
+                                    Крипто
+                                </NavLink>
                                 {usePage().props.admin &&
                                     <NavLink
                                     href={route('admin.users.index')}
@@ -202,6 +209,12 @@ export default function AuthenticatedLayout({header, children}) {
                                 theme={theme}
                             >
                                 Статистика
+                            </ResponsiveNavLink>
+                            <ResponsiveNavLink
+                                href={route('test-encryption')}
+                                theme={theme}
+                            >
+                                Криптография
                             </ResponsiveNavLink>
                             {usePage().props.admin &&
                                 <ResponsiveNavLink

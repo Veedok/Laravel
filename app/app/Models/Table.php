@@ -47,13 +47,19 @@ class Table extends Model
         return $this->hasMany(Transaction::class);
     }
 
+    public function userTables()
+    {
+        return $this->hasMany(UserTable::class, 'table_id');
+    }
+
     /**
      * Возвращает права пользователя
      * @param $userId
+     * @param bool $onlyPermission
      * @return array
      * @throws JsonException
      */
-    public function getUserPermissions($userId, $onlyPermission = false): array
+    public function getUserPermissions($userId, bool $onlyPermission = false): array
     {
         /** @var User $user */
         $user = $this->users()

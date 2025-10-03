@@ -2,6 +2,7 @@
 
 namespace App\Traits;
 
+use App\Models\Table;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -13,6 +14,10 @@ trait Checker
         'user' => [
             'class' => User::class,
             'error' => "Пользователь не найден"
+        ],
+        'table' => [
+            'class' => Table::class,
+            'error' => 'Таблица не найдена'
         ]
     ];
 

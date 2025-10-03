@@ -1,5 +1,5 @@
 // TransactionsTable.jsx
-import React, { useState, useMemo } from 'react';
+import React, {useState, useMemo, useEffect} from 'react';
 import axios from 'axios';
 import '../../css/payTable.css';
 import ToastNotification from './common/ToastNotification.jsx';
@@ -10,8 +10,18 @@ import ConfirmModal from "@/Components/common/ConfirmModal.jsx";
 import TransactionFormModal from "@/Components/PayTable/TransactionFormModal.jsx";
 import AddTransactionButton from "@/Components/PayTable/AddTransactionButton.jsx";
 import {ChevronUpIcon, ChevronDownIcon, ArrowsUpDownIcon, XMarkIcon} from '@heroicons/react/24/outline';
+import EncryptionService from "@/Pages/Crypto/encryptionService.js";
 
-const TransactionsTable = ({ data, activeTableId, permissions, theme, userTags: initialUserTags }) => {
+const TransactionsTable = ({
+                               data,
+                               activeTableId,
+                               permissions,
+                               theme,
+                               userTags: initialUserTags,
+                               isEncrypted,
+                               isLocked
+                           }) => {
+    const [decryptedData, setDecryptedData] = useState([]);
     const [filterType, setFilterType] = useState(null);
     const [isSortExpanded, setIsSortExpanded] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -29,8 +39,101 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme, userTags: 
         date: new Date().toISOString().split('T')[0],
         tags: ''
     });
+    useEffect(() => {
+        const loadDecryptedData = async () => {
+            const decrypted = await decryptTransactions(data);
+            setDecryptedData(decrypted);
+        };
 
-    const [transactions, setTransactions] = useState(data);
+        loadDecryptedData();
+    }, [data, isEncrypted, isLocked, activeTableId]);
+
+    const [transactions, setTransactions] = useState(decryptedData);
+
+    useEffect(() => {
+        setTransactions(decryptedData);
+    }, [decryptedData]);
+    const decryptTransactions = async (transactions) => {
+        if (!isEncrypted || isLocked) {
+            return transactions.map(item => ({
+                ...item,
+                displayTitle: "🔒 Зашифрованная запись",
+                displaySum: "***"
+            }));
+        }
+
+        try {
+            // Получаем ключ из localStorage
+            const storedDataKey = localStorage.getItem(`table_${activeTableId}_dataKey`);
+            if (!storedDataKey) {
+                throw new Error('Ключ расшифровки не найден');
+            }
+
+            const dataKey = await EncryptionService.importKey(storedDataKey);
+            const decryptedTransactions = [];
+
+            for (const item of transactions) {
+                try {
+                    // Расшифровываем title и sum
+                    const decryptedTitle = await EncryptionService.decryptData(item.title, dataKey);
+                    const decryptedSum = await EncryptionService.decryptData(item.sum, dataKey);
+
+                    decryptedTransactions.push({
+                        ...item,
+                        title: decryptedTitle,
+                        sum: parseFloat(decryptedSum),
+                        displayTitle: decryptedTitle,
+                        displaySum: parseFloat(decryptedSum)
+                    });
+                } catch (itemError) {
+                    console.error(`Ошибка расшифровки транзакции ${item.id}:`, itemError);
+                    // Если не удалось расшифровать, показываем заглушку
+                    decryptedTransactions.push({
+                        ...item,
+                        displayTitle: "🔒 Ошибка расшифровки",
+                        displaySum: "***"
+                    });
+                }
+            }
+
+            return decryptedTransactions;
+        } catch (error) {
+            console.error('Ошибка расшифровки данных:', error);
+            // Возвращаем транзакции с заглушками
+            return transactions.map(item => ({
+                ...item,
+                displayTitle: "🔒 Ошибка доступа",
+                displaySum: "***"
+            }));
+        }
+    };
+    const displayTitle = (item) => {
+        // Проверяем, выглядят ли данные как зашифрованные (base64)
+        const looksEncrypted = (text) => {
+            if (typeof text !== 'string') return false;
+            // Простая эвристика для определения base64
+            return text.length > 10 && /^[A-Za-z0-9+/]*={0,2}$/.test(text);
+        };
+
+        if (isEncrypted && isLocked) {
+            return "🔒 Зашифрованная запись";
+        } else if (isEncrypted && !isLocked && looksEncrypted(item.title)) {
+            // Данные зашифрованы но у нас есть ключ - нужно расшифровать
+            return "🔓 Данные需要解密"; // Временная заглушка
+        }
+        return item.title;
+    };
+
+
+    const displaySum = (item) => {
+        if (isEncrypted && isLocked) {
+            return "***";
+        } else if (isEncrypted && !isLocked) {
+            // TODO: Реальная расшифровка когда есть ключ
+            return item.sum; // временно показываем как есть
+        }
+        return item.sum;
+    };
     const [userTags, setUserTags] = useState(initialUserTags || []);
 
     const [sortConfig, setSortConfig] = useState({
@@ -138,12 +241,12 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme, userTags: 
 
     const renderSortIcon = (key) => {
         if (sortConfig.key !== key) {
-            return <ArrowsUpDownIcon className="w-4 h-4 ml-1 opacity-50" />;
+            return <ArrowsUpDownIcon className="w-4 h-4 ml-1 opacity-50"/>;
         }
 
         return sortConfig.direction === 'asc'
-            ? <ChevronUpIcon className="w-4 h-4 ml-1" />
-            : <ChevronDownIcon className="w-4 h-4 ml-1" />;
+            ? <ChevronUpIcon className="w-4 h-4 ml-1"/>
+            : <ChevronDownIcon className="w-4 h-4 ml-1"/>;
     };
 
     const addNewTag = (newTag) => {
@@ -207,6 +310,10 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme, userTags: 
     };
 
     const handleEdit = (transaction) => {
+        if (!canEdit) {
+            alert('Данные заблокированы. Сначала разблокируйте таблицу.');
+            return;
+        }
         setEditingId(transaction.id);
         setFormData({
             id: transaction.id,
@@ -221,6 +328,10 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme, userTags: 
     };
 
     const handleDeleteClick = (id) => {
+        if (!canEdit) {
+            alert('Данные заблокированы. Сначала разблокируйте таблицу.');
+            return;
+        }
         setItemToDelete(id);
         setDeleteModalOpen(true);
     };
@@ -231,7 +342,7 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme, userTags: 
         setIsDeleting(true);
         try {
             await axios.delete(route('deleteData'), {
-                data: { id: itemToDelete }
+                data: {id: itemToDelete}
             });
 
             setTransactions(prev => prev.filter(t => t.id !== itemToDelete));
@@ -284,9 +395,15 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme, userTags: 
             acc.expense += item.sum;
         }
         return acc;
-    }, { income: 0, expense: 0 });
-
+    }, {income: 0, expense: 0});
+    const canEdit = !isEncrypted || !isLocked;
     const formatCurrency = (amount) => {
+        // Если amount - строка (заглушка), возвращаем как есть
+        if (typeof amount === 'string') {
+            return amount;
+        }
+
+        // Если amount - число, форматируем как валюту
         return amount.toLocaleString('ru-RU', {
             style: 'currency',
             currency: 'RUB',
@@ -374,76 +491,132 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme, userTags: 
                 <table className="min-w-full divide-y">
                     <thead className={theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'}>
                     <tr>
-                        <th
-                            className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:opacity-80"
-                            onClick={() => handleSort('title')}
-                        >
-                            <div className="flex items-center">
-                                Название
-                                {renderSortIcon('title')}
-                            </div>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                            Название
                         </th>
-                        <th
-                            className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:opacity-80"
-                            onClick={() => handleSort('type')}
-                        >
-                            <div className="flex items-center">
-                                Тип операции
-                                {renderSortIcon('type')}
-                            </div>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                            Тип операции
                         </th>
-                        <th
-                            className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:opacity-80"
-                            onClick={() => handleSort('sum')}
-                        >
-                            <div className="flex items-center">
-                                Сумма
-                                {renderSortIcon('sum')}
-                            </div>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                            Сумма
                         </th>
-                        <th
-                            className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:opacity-80"
-                            onClick={() => handleSort('date')}
-                        >
-                            <div className="flex items-center">
-                                Дата
-                                {renderSortIcon('date')}
-                            </div>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                            Дата
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider action_head">Действия</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider action_head">
+                            Действия
+                        </th>
                     </tr>
                     </thead>
                     <tbody className={`divide-y ${
                         theme === 'dark' ? 'bg-gray-800 divide-gray-700' : 'bg-white divide-gray-200'
                     }`}>
                     {filteredAndSortedTransactions.map((item) => (
-                        <DesktopTableRow
-                            key={item.id}
-                            item={item}
-                            theme={theme}
-                            formatCurrency={formatCurrency}
-                            onEdit={handleEdit}
-                            onDelete={handleDeleteClick}
-                            permissions={permissions}
-                        />
+                        <tr key={item.id} className={theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                {displayTitle(item)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                {item.changeBalance ? (
+                                    <span className="text-green-600 font-medium">Доход</span>
+                                ) : (
+                                    <span className="text-red-600 font-medium">Расход</span>
+                                )}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                {formatCurrency(displaySum(item))}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                {item.date}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium action_head">
+                                {canEdit && permissions?.is_owner && (
+                                    <div className="flex space-x-2">
+                                        <button
+                                            onClick={() => handleEdit(item)}
+                                            className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                                        >
+                                            Редактировать
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteClick(item.id)}
+                                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                        >
+                                            Удалить
+                                        </button>
+                                    </div>
+                                )}
+                                {!canEdit && (
+                                    <span className="text-gray-500 dark:text-gray-400 text-xs">
+                                        Заблокировано
+                                    </span>
+                                )}
+                            </td>
+                        </tr>
                     ))}
                     </tbody>
                 </table>
             </div>
 
+            {/* Аналогично обновляем мобильную версию */}
             <div className="md:hidden space-y-3">
                 {filteredAndSortedTransactions.map((item) => (
-                    <MobileTransactionCard
-                        key={item.id}
-                        item={item}
-                        theme={theme}
-                        formatCurrency={formatCurrency}
-                        onEdit={handleEdit}
-                        onDelete={handleDeleteClick}
-                        permissions={permissions}
-                    />
+                    <div key={item.id} className={`p-4 rounded-lg border ${
+                        theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'
+                    }`}>
+                        <div className="flex justify-between items-start mb-2">
+                            <div className="font-medium">
+                                {displayTitle(item)}
+                            </div>
+                            <div className="font-medium">
+                                {formatCurrency(displaySum(item))}
+                            </div>
+                        </div>
+                        <div className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
+                            <div className="flex items-center space-x-4">
+                                <span>
+                                    {item.changeBalance ? (
+                                        <span className="text-green-600 font-medium">Доход</span>
+                                    ) : (
+                                        <span className="text-red-600 font-medium">Расход</span>
+                                    )}
+                                </span>
+                                <span>{item.date}</span>
+                            </div>
+                            {canEdit && permissions?.is_owner && (
+                                <div className="flex space-x-2">
+                                    <button
+                                        onClick={() => handleEdit(item)}
+                                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 text-sm"
+                                    >
+                                        Редакт.
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteClick(item.id)}
+                                        className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 text-sm"
+                                    >
+                                        Удалить
+                                    </button>
+                                </div>
+                            )}
+                            {!canEdit && (
+                                <span className="text-gray-500 dark:text-gray-400 text-xs">
+                                    Заблокировано
+                                </span>
+                            )}
+                        </div>
+                    </div>
                 ))}
             </div>
+
+            {/* Блокируем кнопку добавления если данные заблокированы */}
+            {canEdit && (
+                <AddTransactionButton
+                    onClick={() => setIsModalOpen(true)}
+                    theme={theme}
+                    permissions={permissions}
+                />
+            )}
             <AddTransactionButton
                 onClick={() => setIsModalOpen(true)}
                 theme={theme}

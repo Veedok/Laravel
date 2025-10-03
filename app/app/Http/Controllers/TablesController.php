@@ -2,14 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\DTO\CryptoDTO;
 use App\DTO\NewTableDTO;
 use App\DTO\Table\AddUserDTO;
 use App\DTO\Table\GetAndRemoveDTO;
 use App\DTO\Table\UpdateDTO;
 use App\DTO\TableDataDTO;
+use App\Models\Transaction;
+use App\Models\UserTable;
 use App\Services\TableService;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Response;
 use JsonException;
 
@@ -107,5 +112,36 @@ readonly class TablesController
     public function share(AddUserDTO $request): JsonResponse
     {
         return $this->tableService->share($request);
+    }
+
+
+    public function crypto(CryptoDTO $request)
+    {
+        $result = ['status' => 500, 'content' => '123123123'];
+        try {
+            DB::transaction(function () use ($request, &$result) {
+                $usersTable = $request->table->userTables()->get()->keyBy('user_id');
+                $transactions = $request->table->transactions()->get()->keyBy('id');
+                foreach ($request->users as $id => $user) {
+                    /** @var UserTable $usersTable */
+                    $update = $usersTable[$id];
+                    $update->key = $user['encryptedDataKey'];
+                    $update->salt = $user['salt'];
+                    $update->safeSave();
+                }
+                foreach ($request->transactions as $id => $transaction) {
+                    /** @var Transaction $update */
+                    $update = $transactions[$id];
+                    $update->sum = $transaction['sum'];
+                    $update->name = $transaction['title'];
+                    $update->save();
+                }
+                $result['status'] = 200;
+                $result['content'] = "Ok";
+            });
+        } catch (Exception $e) {
+            $result = ['content' => $e->getMessage()];
+        }
+        return response()->json($result['content'], $result['status']);
     }
 }

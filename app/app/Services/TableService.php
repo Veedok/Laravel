@@ -66,13 +66,15 @@ class TableService
     {
         /** @var Table $table */
         $table = Table::find($request->id);
+        $tableKey = $table->userTables()->where('user_id', $request->requestUser->id)->first()->key;
+        $salt = $table->userTables()->where('user_id', $request->requestUser->id)->first()->salt;
         $result = [
             'permission' => $table->getUserPermissions($request->requestUser->id),
             'userTags' => $request->requestUser->tags()->pluck('name')->toArray(),
             'transactions' => [],
-            "is_encrypted"=> true,
-            "tableKey" => $table->userTables()->where('user_id', $request->requestUser->id)->first()->key,
-            "salt" => $table->userTables()->where('user_id', $request->requestUser->id)->first()->salt
+            "is_encrypted"=> !empty($tableKey) && !empty($salt),
+            "tableKey" => $tableKey,
+            "salt" => $salt
         ];
         foreach ($table->transactions as $item) {
             $result['transactions'][] = [

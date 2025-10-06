@@ -31,22 +31,29 @@ const TableEncryptionControls = ({
         setIsEncrypted(isEncryptedFromServer);
 
         if (isEncryptedFromServer) {
-            // Проверяем наличие ключа разными способами
-            const hasLocalKey = localStorage.getItem(`table_${tableId}_dataKey`);
-            const hasServerKey = serverTableKey && serverSalt;
+            // Проверяем наличие РАСШИФРОВАННОГО ключа данных
+            const hasDecryptedDataKey = localStorage.getItem(`table_${tableId}_dataKey`);
 
-            if (hasServerKey) {
-                // Сохраняем серверные ключи локально
-                localStorage.setItem(`table_${tableId}_dataKey`, serverTableKey);
-                localStorage.setItem(`table_${tableId}_salt`, serverSalt);
-                setIsLocked(false);
-            } else if (hasLocalKey) {
+            if (hasDecryptedDataKey) {
+                // У нас есть расшифрованный ключ - данные разблокированы
                 setIsLocked(false);
             } else {
+                // Нет расшифрованного ключа - данные заблокированы
+                // Сохраняем серверные ключи для будущей расшифровки
+                if (serverTableKey && serverSalt) {
+                    localStorage.setItem(`table_${tableId}_serverKey`, serverTableKey);
+                    localStorage.setItem(`table_${tableId}_serverSalt`, serverSalt);
+                }
                 setIsLocked(true);
             }
         } else {
+            // Таблица не зашифрована
             setIsLocked(false);
+            // Очищаем все ключи
+            localStorage.removeItem(`table_${tableId}_dataKey`);
+            localStorage.removeItem(`table_${tableId}_serverKey`);
+            localStorage.removeItem(`table_${tableId}_serverSalt`);
+            localStorage.removeItem(`table_${tableId}_encryptedKeys`);
         }
     }, [isEncryptedFromServer, serverTableKey, serverSalt, tableId]);
 
@@ -185,53 +192,58 @@ const TableEncryptionControls = ({
                 }
             }
             setLoading(true);
+
+            // 1. Генерируем ключ данных
             const dataKey = await EncryptionService.generateDataKey();
+
+            // 2. Шифруем ключ данных для каждого пользователя
             const encryptedKeys = {};
+
             for (const user of tableUsers) {
                 const salt = EncryptionService.generateSalt();
                 const kek = await EncryptionService.deriveKeyFromPassword(passwords[user.id], salt);
                 const encryptedDataKey = await EncryptionService.encryptDataKey(dataKey, kek);
+
                 encryptedKeys[user.id] = {
                     encryptedDataKey,
                     salt: EncryptionService.uint8ArrayToHex(salt)
                 };
             }
+
+            // 3. Шифруем данные транзакций
             const encryptedTransactions = await encryptTransactionsData(dataKey);
+
+            // 4. Подготавливаем данные для отправки на сервер
             const requestData = {
                 tableId: parseInt(tableId),
                 users: {},
                 transactions: encryptedTransactions
             };
+
+            // Преобразуем encryptedKeys в формат для сервера
             for (const [userId, keyData] of Object.entries(encryptedKeys)) {
                 requestData.users[userId] = {
                     encryptedDataKey: keyData.encryptedDataKey,
                     salt: keyData.salt
                 };
             }
-            console.log('Отправка зашифрованных данных на сервер:', {
-                tableId: requestData.tableId,
-                usersCount: Object.keys(requestData.users).length,
-                transactionsCount: Object.keys(requestData.transactions).length
-            });
+
+            // 5. Отправляем данные на сервер
             const response = await axios.post(route('cryptoTable'), requestData);
 
             if (response.status === 200) {
-                // 6. Сохраняем локально только ключ для текущей сессии
-                const exportedDataKey = await EncryptionService.exportKey(dataKey);
-                localStorage.setItem(`table_${tableId}_dataKey`, exportedDataKey);
+                // 6. Сохраняем локально зашифрованные ключи (но НЕ сам dataKey)
                 localStorage.setItem(`table_${tableId}_encryptedKeys`, JSON.stringify(encryptedKeys));
 
-                // НЕ сохраняем флаг encrypted в localStorage - он теперь на сервере
-                // setIsEncrypted(true); - теперь управляется сервером через пропс
-                setIsLocked(false);
-                onEncryptionChange?.(true, false);
-                showMessage('Таблица успешно зашифрована!', 'success');
+                // НЕ сохраняем dataKey - он должен расшифровываться паролем
+                // localStorage.setItem(`table_${tableId}_dataKey`, exportedDataKey);
+
+                setIsEncrypted(true);
+                setIsLocked(true); // После шифрования данные заблокированы до ввода пароля
+                onEncryptionChange?.(true, true);
+                showMessage('Таблица успешно зашифрована! Введите пароль для доступа к данным.', 'success');
                 resetModal();
 
-                // Перезагружаем данные чтобы получить зашифрованные транзакции с сервера
-                window.location.reload();
-            } else {
-                throw new Error(`Сервер вернул статус: ${response.status}`);
             }
         } catch (error) {
             console.error('Ошибка шифрования или отправки на сервер:', error);
@@ -287,52 +299,69 @@ const TableEncryptionControls = ({
 
             setLoading(true);
 
-            // Получаем зашифрованные ключи
+            // Пробуем разные источники зашифрованных ключей:
+
+            // 1. Сначала пробуем локальные зашифрованные ключи
             const storedEncryptedKeys = localStorage.getItem(`table_${tableId}_encryptedKeys`);
-            if (!storedEncryptedKeys) {
-                showMessage('Данные шифрования не найдены', 'error');
-                return;
+            if (storedEncryptedKeys) {
+                const encryptedKeys = JSON.parse(storedEncryptedKeys);
+                const currentUserKey = encryptedKeys[currentUser.id];
+
+                if (currentUserKey) {
+                    // Расшифровываем ключ данных из localStorage
+                    const salt = EncryptionService.hexToUint8Array(currentUserKey.salt);
+                    const kek = await EncryptionService.deriveKeyFromPassword(currentPassword, salt);
+                    const dataKey = await EncryptionService.decryptDataKey(currentUserKey.encryptedDataKey, kek);
+
+                    // Сохраняем расшифрованный ключ
+                    const exportedDataKey = await EncryptionService.exportKey(dataKey);
+                    localStorage.setItem(`table_${tableId}_dataKey`, exportedDataKey);
+
+                    setIsLocked(false);
+                    onEncryptionChange?.(true, false);
+                    showMessage('Данные успешно разблокированы!', 'success');
+                    resetModal();
+                    return;
+                }
             }
 
-            const encryptedKeys = JSON.parse(storedEncryptedKeys);
-            const currentUserKey = encryptedKeys[currentUser.id];
+            // 2. Если локальных ключей нет, пробуем серверные ключи
+            const serverKey = localStorage.getItem(`table_${tableId}_serverKey`);
+            const serverSalt = localStorage.getItem(`table_${tableId}_serverSalt`);
 
-            if (!currentUserKey) {
-                showMessage('Ключ для вашего пользователя не найден', 'error');
-                return;
+            if (serverKey && serverSalt) {
+                try {
+                    // Преобразуем серверную соль из hex в Uint8Array
+                    const salt = EncryptionService.hexToUint8Array(serverSalt);
+
+                    // Создаем KEK из пароля пользователя
+                    const kek = await EncryptionService.deriveKeyFromPassword(currentPassword, salt);
+
+                    // Расшифровываем ключ данных с сервера
+                    const dataKey = await EncryptionService.decryptDataKey(serverKey, kek);
+
+                    // Сохраняем расшифрованный ключ
+                    const exportedDataKey = await EncryptionService.exportKey(dataKey);
+                    localStorage.setItem(`table_${tableId}_dataKey`, exportedDataKey);
+
+                    setIsLocked(false);
+                    onEncryptionChange?.(true, false);
+                    showMessage('Данные успешно разблокированы с серверными ключами!', 'success');
+                    resetModal();
+                    return;
+
+                } catch (serverKeyError) {
+                    console.error('Ошибка расшифровки серверных ключей:', serverKeyError);
+                    // Продолжаем к следующему варианту
+                }
             }
 
-            // Расшифровываем ключ данных
-            const salt = EncryptionService.hexToUint8Array(currentUserKey.salt);
-            const kek = await EncryptionService.deriveKeyFromPassword(currentPassword, salt);
-            const dataKey = await EncryptionService.decryptDataKey(currentUserKey.encryptedDataKey, kek);
-
-            // Сохраняем расшифрованный ключ
-            const exportedDataKey = await EncryptionService.exportKey(dataKey);
-            localStorage.setItem(`table_${tableId}_dataKey`, exportedDataKey);
-
-            setIsLocked(false);
-            onEncryptionChange?.(true, false);
-            showMessage('Данные успешно разблокированы!', 'success');
-            resetModal();
+            // 3. Если ничего не сработало
+            showMessage('Неверный пароль или ключи шифрования не найдены', 'error');
 
         } catch (error) {
             console.error('Ошибка разблокировки:', error);
-
-            // Пробуем использовать серверные ключи если они есть
-            if (serverTableKey && serverSalt) {
-                try {
-                    showMessage('Пробуем использовать серверные ключи...', 'info');
-
-                    // TODO: Реализовать расшифровку серверных ключей
-                    // Это потребует изменения логики на сервере
-
-                } catch (serverKeyError) {
-                    showMessage('Неверный пароль или ошибка разблокировки', 'error');
-                }
-            } else {
-                showMessage('Неверный пароль или ошибка разблокировки', 'error');
-            }
+            showMessage('Неверный пароль или ошибка разблокировки', 'error');
         } finally {
             setLoading(false);
         }

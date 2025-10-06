@@ -108,19 +108,11 @@ const TransactionsTable = ({
         }
     };
     const displayTitle = (item) => {
-        // Проверяем, выглядят ли данные как зашифрованные (base64)
-        const looksEncrypted = (text) => {
-            if (typeof text !== 'string') return false;
-            // Простая эвристика для определения base64
-            return text.length > 10 && /^[A-Za-z0-9+/]*={0,2}$/.test(text);
-        };
-
         if (isEncrypted && isLocked) {
             return "🔒 Зашифрованная запись";
-        } else if (isEncrypted && !isLocked && looksEncrypted(item.title)) {
-            // Данные зашифрованы но у нас есть ключ - нужно расшифровать
-            return "🔓 Данные需要解密"; // Временная заглушка
         }
+        // Если разблокировано, но данные все еще зашифрованы - нужна ручная расшифровка
+        // Пока просто показываем как есть
         return item.title;
     };
 
@@ -128,9 +120,6 @@ const TransactionsTable = ({
     const displaySum = (item) => {
         if (isEncrypted && isLocked) {
             return "***";
-        } else if (isEncrypted && !isLocked) {
-            // TODO: Реальная расшифровка когда есть ключ
-            return item.sum; // временно показываем как есть
         }
         return item.sum;
     };
@@ -433,6 +422,7 @@ const TransactionsTable = ({
                 onIncomeClick={handleIncomeClick}
                 onExpenseClick={handleExpenseClick}
                 onClearFilter={handleClearFilter}
+                isLocked={isLocked}
             />
             <div className="md:hidden">
                 <div className={`rounded-lg mb-3 ${

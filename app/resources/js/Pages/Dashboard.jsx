@@ -107,25 +107,30 @@ export default function Dashboard({ theme, tables: initialTables, auth }) {
             // Синхронизируем состояние шифрования с сервером
             setIsTableEncrypted(serverData.is_encrypted || false);
 
-            // Проверяем, есть ли у нас ключ для расшифровки
             if (serverData.is_encrypted) {
-                // Пробуем найти ключ в localStorage
-                const hasLocalKey = localStorage.getItem(`table_${tableId}_dataKey`);
+                // Проверяем, есть ли у нас РАСШИФРОВАННЫЙ ключ в localStorage
+                const hasDecryptedKey = localStorage.getItem(`table_${tableId}_dataKey`);
 
-                // ИЛИ если сервер прислал ключ и соль - сохраняем их
-                if (serverData.tableKey && serverData.salt) {
-                    // Сохраняем серверные ключи в localStorage
-                    localStorage.setItem(`table_${tableId}_dataKey`, serverData.tableKey);
-                    localStorage.setItem(`table_${tableId}_salt`, serverData.salt);
+                if (hasDecryptedKey) {
+                    // У нас есть расшифрованный ключ - данные разблокированы
                     setIsTableLocked(false);
+                } else if (serverData.tableKey && serverData.salt) {
+                    // Сервер прислал зашифрованные ключи - данные заблокированы
+                    // Сохраняем серверные ключи для будущей расшифровки
+                    localStorage.setItem(`table_${tableId}_serverKey`, serverData.tableKey);
+                    localStorage.setItem(`table_${tableId}_serverSalt`, serverData.salt);
+                    setIsTableLocked(true);
                 } else {
-                    setIsTableLocked(!hasLocalKey);
+                    // Нет ключей - данные заблокированы
+                    setIsTableLocked(true);
                 }
             } else {
+                // Таблица не зашифрована
                 setIsTableLocked(false);
-                // Очищаем ключи если таблица не зашифрована
+                // Очищаем все ключи
                 localStorage.removeItem(`table_${tableId}_dataKey`);
-                localStorage.removeItem(`table_${tableId}_salt`);
+                localStorage.removeItem(`table_${tableId}_serverKey`);
+                localStorage.removeItem(`table_${tableId}_serverSalt`);
                 localStorage.removeItem(`table_${tableId}_encryptedKeys`);
             }
 

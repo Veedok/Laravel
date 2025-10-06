@@ -1,26 +1,38 @@
 // components/MobileTransactionCard.jsx
 import { useState, useRef, useEffect } from 'react';
 
-export default function MobileTransactionCard({ item, theme, formatCurrency, onEdit, onDelete, permissions }) {
+export default function MobileTransactionCard({
+                                                  item,
+                                                  theme,
+                                                  formatCurrency,
+                                                  onEdit,
+                                                  onDelete,
+                                                  permissions,
+                                                  isLocked = false
+                                              }) {
     const [isExpanded, setIsExpanded] = useState(false);
     const [contentHeight, setContentHeight] = useState(0);
     const contentRef = useRef(null);
 
     const toggleExpand = () => {
-        setIsExpanded(!isExpanded);
+        if (!isLocked) {
+            setIsExpanded(!isExpanded);
+        }
     };
 
-    // Измеряем высоту контента для плавной анимации
     useEffect(() => {
         if (contentRef.current) {
             setContentHeight(contentRef.current.scrollHeight);
         }
-    }, [item]); // Пересчитываем высоту при изменении item
+    }, [item]);
+
+    const displayTitle = isLocked ? '••••••••' : item.title;
+    const displaySum = isLocked ? '•••••' : formatCurrency(item.sum);
 
     return (
         <div className={`rounded-lg border ${
             theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'
-        }`}>
+        } ${isLocked ? 'opacity-70' : ''}`}>
             {/* Свернутое состояние */}
             <div
                 className="p-4 cursor-pointer"
@@ -36,9 +48,14 @@ export default function MobileTransactionCard({ item, theme, formatCurrency, onE
                     </span>
 
                     <span className="font-semibold text-lg">
-                        {formatCurrency(item.sum)}
+                        {displaySum}
                     </span>
                 </div>
+                {isLocked && (
+                    <div className="text-xs text-gray-500 mt-1 text-center">
+                        🔒 Данные защищены
+                    </div>
+                )}
             </div>
 
             {/* Развернутое состояние с анимацией */}
@@ -52,7 +69,7 @@ export default function MobileTransactionCard({ item, theme, formatCurrency, onE
             >
                 <div className="p-4 border-t border-gray-200 dark:border-gray-600">
                     <div className="flex justify-between items-start mb-3">
-                        <h3 className="font-semibold text-lg">{item.title}</h3>
+                        <h3 className="font-semibold text-lg">{displayTitle}</h3>
                         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
                             item.changeBalance
                                 ? theme === 'dark' ? 'bg-green-900 text-green-300' : 'bg-green-100 text-green-800'
@@ -65,7 +82,7 @@ export default function MobileTransactionCard({ item, theme, formatCurrency, onE
                     <div className="grid grid-cols-2 gap-4 text-sm mb-3">
                         <div>
                             <span className="text-gray-500">Сумма:</span>
-                            <p className="font-medium">{formatCurrency(item.sum)}</p>
+                            <p className="font-medium">{displaySum}</p>
                         </div>
                         <div>
                             <span className="text-gray-500">Дата:</span>
@@ -79,13 +96,14 @@ export default function MobileTransactionCard({ item, theme, formatCurrency, onE
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        onEdit(item);
+                                        if (!isLocked) onEdit(item);
                                     }}
                                     className={`flex-1 py-2 px-3 rounded-md text-center ${
                                         theme === 'dark'
                                             ? 'bg-indigo-700 text-white hover:bg-indigo-600'
                                             : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
-                                    }`}
+                                    } ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    disabled={isLocked}
                                 >
                                     ✏️ Изменить
                                 </button>
@@ -94,13 +112,14 @@ export default function MobileTransactionCard({ item, theme, formatCurrency, onE
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        onDelete(item.id);
+                                        if (!isLocked) onDelete(item.id);
                                     }}
                                     className={`flex-1 py-2 px-3 rounded-md text-center ${
                                         theme === 'dark'
                                             ? 'bg-red-700 text-white hover:bg-red-600'
                                             : 'bg-red-100 text-red-700 hover:bg-red-200'
-                                    }`}
+                                    } ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    disabled={isLocked}
                                 >
                                     🗑️ Удалить
                                 </button>

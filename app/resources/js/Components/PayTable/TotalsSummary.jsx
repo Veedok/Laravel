@@ -9,8 +9,18 @@ export default function TotalsSummary({
                                           filterType,
                                           onIncomeClick,
                                           onExpenseClick,
-                                          onClearFilter
+                                          onClearFilter,
+                                          isLocked = false // Добавляем пропс для состояния блокировки
                                       }) {
+
+    // Функция для отображения заглушки вместо зашифрованных данных
+    const displayValue = (value) => {
+        if (isLocked) {
+            return "•••••"; // Заглушка для заблокированных данных
+        }
+        return formatCurrency(value);
+    };
+
     if (compact) {
         return (
             <div className={`grid grid-cols-2 gap-2 p-3 rounded-lg text-sm ${
@@ -22,9 +32,9 @@ export default function TotalsSummary({
                             ? 'bg-green-800/30 text-green-300'
                             : 'bg-green-100 text-green-800'
                     } ${filterType === 'income' ? 'ring-2 ring-green-400' : ''}`}
-                    onClick={filterType === 'income' ? onClearFilter : onIncomeClick}
+                    onClick={isLocked ? undefined : (filterType === 'income' ? onClearFilter : onIncomeClick)}
                 >
-                    {filterType === 'income' && (
+                    {filterType === 'income' && !isLocked && (
                         <div className="absolute -top-1 -right-1">
                             <div className="bg-green-500 rounded-full p-1">
                                 <XMarkIcon className="w-3 h-3 text-white" />
@@ -32,7 +42,10 @@ export default function TotalsSummary({
                         </div>
                     )}
                     <div className="font-semibold">Доходы</div>
-                    <div className="text-lg font-bold">{formatCurrency(totals.income)}</div>
+                    <div className="text-lg font-bold">{displayValue(totals.income)}</div>
+                    {isLocked && (
+                        <div className="text-xs opacity-70 mt-1">данные защищены</div>
+                    )}
                 </div>
                 <div
                     className={`text-center p-2 rounded relative cursor-pointer transition-all hover:opacity-90 ${
@@ -40,9 +53,9 @@ export default function TotalsSummary({
                             ? 'bg-red-800/30 text-red-300'
                             : 'bg-red-100 text-red-800'
                     } ${filterType === 'expense' ? 'ring-2 ring-red-400' : ''}`}
-                    onClick={filterType === 'expense' ? onClearFilter : onExpenseClick}
+                    onClick={isLocked ? undefined : (filterType === 'expense' ? onClearFilter : onExpenseClick)}
                 >
-                    {filterType === 'expense' && (
+                    {filterType === 'expense' && !isLocked && (
                         <div className="absolute -top-1 -right-1">
                             <div className="bg-red-500 rounded-full p-1">
                                 <XMarkIcon className="w-3 h-3 text-white" />
@@ -50,11 +63,15 @@ export default function TotalsSummary({
                         </div>
                     )}
                     <div className="font-semibold">Расходы</div>
-                    <div className="text-lg font-bold">{formatCurrency(totals.expense)}</div>
+                    <div className="text-lg font-bold">{displayValue(totals.expense)}</div>
+                    {isLocked && (
+                        <div className="text-xs opacity-70 mt-1">данные защищены</div>
+                    )}
                 </div>
             </div>
         );
     }
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div
@@ -63,9 +80,9 @@ export default function TotalsSummary({
                         ? 'text-green-300 bg-green-900/20'
                         : 'text-green-800 bg-green-50'
                 } ${filterType === 'income' ? 'ring-2 ring-green-400' : ''}`}
-                onClick={filterType === 'income' ? onClearFilter : onIncomeClick}
+                onClick={isLocked ? undefined : (filterType === 'income' ? onClearFilter : onIncomeClick)}
             >
-                {filterType === 'income' && (
+                {filterType === 'income' && !isLocked && (
                     <div className="absolute top-2 right-2">
                         <div className="bg-green-500 rounded-full p-1">
                             <XMarkIcon className="w-3 h-3 text-white" />
@@ -73,7 +90,10 @@ export default function TotalsSummary({
                     </div>
                 )}
                 <h3 className="text-sm font-medium">Суммарный приход</h3>
-                <p className="text-2xl font-semibold">{formatCurrency(totals.income)}</p>
+                <p className="text-2xl font-semibold">{displayValue(totals.income)}</p>
+                {isLocked && (
+                    <div className="text-xs opacity-70 mt-1">данные защищены</div>
+                )}
             </div>
             <div
                 className={`p-4 rounded-lg border cursor-pointer transition-all hover:opacity-90 ${
@@ -81,9 +101,9 @@ export default function TotalsSummary({
                         ? 'bg-red-900/20 border-red-800 text-red-300'
                         : 'bg-red-50 border-red-100 text-red-800'
                 } ${filterType === 'expense' ? 'ring-2 ring-red-400' : ''}`}
-                onClick={filterType === 'expense' ? onClearFilter : onExpenseClick}
+                onClick={isLocked ? undefined : (filterType === 'expense' ? onClearFilter : onExpenseClick)}
             >
-                {filterType === 'expense' && (
+                {filterType === 'expense' && !isLocked && (
                     <div className="absolute top-2 right-2">
                         <div className="bg-red-500 rounded-full p-1">
                             <XMarkIcon className="w-3 h-3 text-white" />
@@ -91,7 +111,10 @@ export default function TotalsSummary({
                     </div>
                 )}
                 <h3 className="text-sm font-medium">Суммарный расход</h3>
-                <p className="text-2xl font-semibold">{formatCurrency(totals.expense)}</p>
+                <p className="text-2xl font-semibold">{displayValue(totals.expense)}</p>
+                {isLocked && (
+                    <div className="text-xs opacity-70 mt-1">данные защищены</div>
+                )}
             </div>
         </div>
     );

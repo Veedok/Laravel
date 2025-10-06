@@ -18,6 +18,7 @@ Route::get('/test-encryption', function () {
 })->name('test-encryption');
 Route::middleware(['banned', 'auth', 'verified'])->group(function () {
     Route::post('/cryptoData', [TablesController::class, 'crypto'])->name('cryptoTable');
+    Route::post('/decryptData', [TablesController::class, 'decrypt'])->name('decryptTable');
     Route::get('/dashboard', [TablesController::class, 'mainPage'])->name('dashboard');
     Route::put('/table', [TablesController::class, 'newTable']);
     Route::post('/table', [TablesController::class, 'getTableData'])->name('tableData');

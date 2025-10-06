@@ -59,5 +59,8 @@ class CryptoDTO extends AbstractDTO
         if (isset($this->table) && !$this->requestUser->tables()->find($this->table)?->exists()){
             $this->makeError(Errors::TABLE_NOT_FOUND, 404);
         }
+        if (!$this->table->isOwner($this->requestUser->id)){
+            $this->makeError(Errors::ACCESS_DENIED, 403);
+        }
     }
 }

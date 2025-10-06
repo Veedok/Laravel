@@ -79,4 +79,9 @@ class Table extends Model
         $relation = $this->ownerTable()->where('is_owner', true)->first();
         return $id ? $relation->user->id : $relation->user;
     }
+
+    public function isOwner(mixed $userId): bool
+    {
+        return $userId === $this->getOwner(true);
+    }
 }

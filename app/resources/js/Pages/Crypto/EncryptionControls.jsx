@@ -11,8 +11,8 @@ const TableEncryptionControls = ({
                                      onEncryptionChange,
                                      tableTransactions,
                                      isEncryptedFromServer,
-                                     serverTableKey, // новый пропс - ключ с сервера
-                                     serverSalt      // новый пропс - соль с сервера
+                                     serverTableKey,
+                                     serverSalt
                                  }) => {
     const [isEncrypted, setIsEncrypted] = useState(isEncryptedFromServer);
     const [isLocked, setIsLocked] = useState(true);
@@ -25,6 +25,15 @@ const TableEncryptionControls = ({
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
     const [messageType, setMessageType] = useState('');
+    const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
+
+    const isMobile = windowWidth < 768;
+
+    useEffect(() => {
+        const handleResize = () => setWindowWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // Проверяем состояние шифрования
     useEffect(() => {
@@ -235,9 +244,6 @@ const TableEncryptionControls = ({
                 // 6. Сохраняем локально зашифрованные ключи (но НЕ сам dataKey)
                 localStorage.setItem(`table_${tableId}_encryptedKeys`, JSON.stringify(encryptedKeys));
 
-                // НЕ сохраняем dataKey - он должен расшифровываться паролем
-                // localStorage.setItem(`table_${tableId}_dataKey`, exportedDataKey);
-
                 setIsEncrypted(true);
                 setIsLocked(true); // После шифрования данные заблокированы до ввода пароля
                 onEncryptionChange?.(true, true);
@@ -265,25 +271,71 @@ const TableEncryptionControls = ({
         try {
             setLoading(true);
 
-            // TODO: Отправляем запрос на сервер для расшифровки
-            // После успеха сервер должен вернуть is_encrypted: false
+            // 1. Получаем ключ данных из localStorage
+            const dataKeyBase64 = localStorage.getItem(`table_${tableId}_dataKey`);
+            if (!dataKeyBase64) {
+                showMessage('Ошибка: ключ данных не найден. Сначала разблокируйте таблицу.', 'error');
+                return;
+            }
 
-            // Очищаем локальные ключи
-            localStorage.removeItem(`table_${tableId}_dataKey`);
-            localStorage.removeItem(`table_${tableId}_encryptedKeys`);
+            const dataKey = await EncryptionService.importKey(dataKeyBase64);
 
-            // setIsEncrypted(false); - теперь управляется сервером
-            setIsLocked(false);
-            onEncryptionChange?.(false, false);
-            showMessage('Таблица успешно расшифрована!', 'success');
-            resetModal();
+            // 2. Расшифровываем данные транзакций в том же формате, что и при шифровании
+            const decryptedTransactions = {};
 
-            // Перезагружаем данные
-            window.location.reload();
+            for (const transaction of tableTransactions) {
+                try {
+                    // Расшифровываем title и sum
+                    const decryptedTitle = await EncryptionService.decryptData(transaction.title, dataKey);
+                    const decryptedSum = await EncryptionService.decryptData(transaction.sum, dataKey);
+
+                    decryptedTransactions[transaction.id] = {
+                        sum: decryptedSum,
+                        title: decryptedTitle
+                    };
+                } catch (error) {
+                    console.error(`Ошибка расшифровки транзакции ${transaction.id}:`, error);
+                    throw new Error(`Не удалось расшифровать транзакцию ${transaction.id}`);
+                }
+            }
+
+            // 3. Подготавливаем данные для отправки на сервер
+            const requestData = {
+                tableId: parseInt(tableId),
+                transactions: decryptedTransactions
+                // users не отправляем - сервер сам удалит ключи
+            };
+
+            // 4. Отправляем расшифрованные данные на сервер
+            const response = await axios.post(route('decryptTable'), requestData);
+
+            if (response.status === 200) {
+                // 5. Очищаем локальные ключи
+                localStorage.removeItem(`table_${tableId}_dataKey`);
+                localStorage.removeItem(`table_${tableId}_encryptedKeys`);
+                localStorage.removeItem(`table_${tableId}_serverKey`);
+                localStorage.removeItem(`table_${tableId}_serverSalt`);
+
+                setIsEncrypted(false);
+                setIsLocked(false);
+                onEncryptionChange?.(false, false);
+                showMessage('Таблица успешно расшифрована!', 'success');
+                resetModal();
+
+                // 6. Перезагружаем данные
+                window.location.reload();
+            }
 
         } catch (error) {
-            console.error('Ошибка расшифровки:', error);
-            showMessage('Ошибка при расшифровке данных', 'error');
+            console.error('Ошибка расшифровки или отправки на сервер:', error);
+            if (error.response) {
+                const errorMessage = error.response.data?.message || 'Ошибка сервера';
+                showMessage(`Ошибка сервера: ${errorMessage}`, 'error');
+            } else if (error.request) {
+                showMessage('Ошибка сети: не удалось отправить данные на сервер', 'error');
+            } else {
+                showMessage(`Ошибка: ${error.message}`, 'error');
+            }
         } finally {
             setLoading(false);
         }
@@ -299,7 +351,7 @@ const TableEncryptionControls = ({
 
             setLoading(true);
 
-            // Пробуем разные источники зашифрованных ключей:
+            // Пробуем разные источники ключей в порядке приоритета:
 
             // 1. Сначала пробуем локальные зашифрованные ключи
             const storedEncryptedKeys = localStorage.getItem(`table_${tableId}_encryptedKeys`);
@@ -542,9 +594,22 @@ const TableEncryptionControls = ({
             decrypt: {
                 title: '🔓 Расшифровка таблицы',
                 content: (
-                    <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded border border-yellow-200 dark:border-yellow-800">
-                        <p className="text-yellow-700 dark:text-yellow-300 text-sm">
-                            ⚠️ <strong>Внимание!</strong> Все данные будут полностью расшифрованы и станут доступны всем пользователям без пароля.
+                    <div className="space-y-4">
+                        <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded border border-yellow-200 dark:border-yellow-800">
+                            <p className="text-yellow-700 dark:text-yellow-300 text-sm">
+                                ⚠️ <strong>Внимание!</strong> Все данные будут полностью расшифрованы и станут доступны всем пользователям без пароля.
+                            </p>
+                        </div>
+                        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800">
+                            <p className="text-blue-700 dark:text-blue-300 text-sm">
+                                <strong>После расшифровки:</strong><br/>
+                                • Данные будут храниться в открытом виде<br/>
+                                • Все пользователи получат доступ без пароля<br/>
+                                • Ключи шифрования будут удалены
+                            </p>
+                        </div>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm">
+                            Вы уверены, что хотите продолжить?
                         </p>
                     </div>
                 )
@@ -617,8 +682,9 @@ const TableEncryptionControls = ({
                 </div>
             )}
 
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+            {/* Изменяем верстку для мобильных устройств */}
+            <div className={`${isMobile ? 'flex flex-col space-y-4' : 'flex items-center justify-between'}`}>
+                <div className={`flex items-center gap-3 ${isMobile ? 'justify-center text-center' : ''}`}>
                     <span className="text-xl">
                         {isEncrypted ? (isLocked ? '🔒' : '🔓') : '📄'}
                     </span>
@@ -638,7 +704,7 @@ const TableEncryptionControls = ({
                     </div>
                 </div>
 
-                <div className="flex gap-2">
+                <div className={`flex gap-2 ${isMobile ? 'justify-center flex-wrap' : ''}`}>
                     {!isEncrypted ? (
                         <button
                             onClick={() => openModal('encrypt')}
@@ -654,16 +720,16 @@ const TableEncryptionControls = ({
                             Разблокировать данные
                         </button>
                     ) : (
-                        <div className="flex gap-2">
+                        <div className={`flex gap-2 ${isMobile ? 'flex-col w-full' : ''}`}>
                             <button
                                 onClick={handleLock}
-                                className={`px-4 py-2 rounded text-sm font-medium ${themeClasses.buttonSecondary}`}
+                                className={`px-4 py-2 rounded text-sm font-medium ${themeClasses.buttonSecondary} ${isMobile ? 'w-full' : ''}`}
                             >
                                 Заблокировать
                             </button>
                             <button
                                 onClick={() => openModal('decrypt')}
-                                className={`px-4 py-2 rounded text-sm font-medium ${themeClasses.buttonPrimary}`}
+                                className={`px-4 py-2 rounded text-sm font-medium ${themeClasses.buttonPrimary} ${isMobile ? 'w-full' : ''}`}
                             >
                                 Расшифровать
                             </button>

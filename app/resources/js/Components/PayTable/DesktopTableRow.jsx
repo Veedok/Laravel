@@ -30,7 +30,7 @@ export default function DesktopTableRow({
             <td className="px-6 py-4 whitespace-nowrap text-sm">{item.date}</td>
             <td className="px-6 py-4 whitespace-nowrap text-sm">
                 <div className="flex space-x-2 action_row">
-                    {(permissions.is_owner || permissions.permissions.includes('editTransactions')) && (
+                    {((permissions.is_owner || permissions.permissions.includes('editTransactions')) && !isLocked ) && (
                         <button
                             onClick={() => !isLocked && onEdit(item)}
                             className={`${isLocked ? 'text-gray-400 cursor-not-allowed' : 'text-indigo-600 hover:text-indigo-900'}`}
@@ -40,7 +40,7 @@ export default function DesktopTableRow({
                             ✏️
                         </button>
                     )}
-                    {(permissions.is_owner || permissions.permissions.includes('deleteTransactions')) && (
+                    {((permissions.is_owner || permissions.permissions.includes('deleteTransactions')) && !isLocked) && (
                         <button
                             onClick={() => !isLocked && onDelete(item.id)}
                             className={`${isLocked ? 'text-gray-400 cursor-not-allowed' : 'text-red-600 hover:text-red-900'}`}

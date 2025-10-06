@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\DTO\CryptoDTO;
+use App\DTO\DecryptDTO;
 use App\DTO\NewTableDTO;
 use App\DTO\Table\AddUserDTO;
 use App\DTO\Table\GetAndRemoveDTO;
@@ -129,13 +130,7 @@ readonly class TablesController
                     $update->salt = $user['salt'];
                     $update->safeSave();
                 }
-                foreach ($request->transactions as $id => $transaction) {
-                    /** @var Transaction $update */
-                    $update = $transactions[$id];
-                    $update->sum = $transaction['sum'];
-                    $update->name = $transaction['title'];
-                    $update->save();
-                }
+                $this->saveTransactions($request->transactions, $transactions);
                 $result['status'] = 200;
                 $result['content'] = "Ok";
             });
@@ -143,5 +138,37 @@ readonly class TablesController
             $result = ['content' => $e->getMessage()];
         }
         return response()->json($result['content'], $result['status']);
+    }
+
+    public function decrypt(DecryptDTO $request)
+    {
+        $result = ['status' => 500, 'content' => '123123123'];
+        try {
+            DB::transaction(function () use ($request, &$result) {
+                foreach ($request->table->userTables()->get() as $user) {
+                    $user->salt = null;
+                    $user->key = null;
+                    $user->safeSave();
+                }
+                $transactions = $request->table->transactions()->get()->keyBy('id');
+                $this->saveTransactions($request->transactions, $transactions);
+                $result['status'] = 200;
+                $result['content'] = "Ok";
+            });
+        } catch (Exception $e) {
+            $result = ['content' => $e->getMessage()];
+        }
+        return response()->json($result['content'], $result['status']);
+    }
+
+    private function saveTransactions(?array $transactions, \Illuminate\Support\Collection $dbTransactions)
+    {
+        foreach ($transactions as $id => $transaction) {
+            /** @var Transaction $update */
+            $update = $dbTransactions[$id];
+            $update->sum = $transaction['sum'];
+            $update->name = $transaction['title'];
+            $update->save();
+        }
     }
 }

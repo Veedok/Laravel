@@ -11,7 +11,8 @@ export default function TransactionFormModal({
                                                  theme,
                                                  editingId,
                                                  userTags = [],
-                                                 onAddNewTag
+                                                 onAddNewTag,
+                                                 isProcessing
                                              }) {
     const [tagInput, setTagInput] = useState('');
     const [tags, setTags] = useState([]);
@@ -344,11 +345,12 @@ export default function TransactionFormModal({
                             </button>
                             <button
                                 type="submit"
+                                disabled={isProcessing}
                                 className={`px-4 py-2 text-white rounded-md hover:bg-blue-700 transition-colors ${
                                     theme === 'dark' ? 'bg-blue-700' : 'bg-blue-600'
-                                }`}
+                                } ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
-                                {editingId ? 'Обновить' : 'Сохранить'}
+                                {isProcessing ? 'Сохранение...' : (editingId ? 'Обновить' : 'Сохранить')}
                             </button>
                         </div>
                     </form>

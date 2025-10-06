@@ -56,6 +56,13 @@ const NoTablesMessage = ({onAddTable}) => (
     </div>
 );
 
+// Новый компонент-обертка для ограничения ширины
+const TableContainer = ({ children }) => (
+    <div className="max-w-[1400px] mx-auto w-full px-4 sm:px-6 lg:px-8">
+        {children}
+    </div>
+);
+
 export default function Dashboard({ theme, tables: initialTables, auth }) {
     const [data, setData] = useState({
         transactions: [],
@@ -89,10 +96,12 @@ export default function Dashboard({ theme, tables: initialTables, auth }) {
             fetchTransactions(activeTableId);
         }
     }, [activeTableId]);
+
     const handleEncryptionChange = (encrypted, locked) => {
         setIsTableEncrypted(encrypted);
         setIsTableLocked(locked);
     };
+
     const fetchTransactions = async (tableId) => {
         try {
             setLoading(true);
@@ -214,6 +223,7 @@ export default function Dashboard({ theme, tables: initialTables, auth }) {
         >
             <Head title="Таблица Баланса"/>
 
+            {/* CarouselButtons оставляем на всю ширину */}
             <CarouselButtons
                 items={tables}
                 onItemClick={handleItemClick}
@@ -222,36 +232,39 @@ export default function Dashboard({ theme, tables: initialTables, auth }) {
                 activeTableId={activeTableId}
             />
 
-            {/* Добавляем контролы шифрования */}
-            <TableEncryptionControls
-                theme={theme}
-                isOwner={data.permission?.is_owner}
-                tableId={activeTableId}
-                currentUser={auth.user}
-                onEncryptionChange={handleEncryptionChange}
-                tableTransactions={data.transactions}
-                isEncryptedFromServer={data.is_encrypted}
-                serverTableKey={data.tableKey}  // передаем ключ с сервера
-                serverSalt={data.salt}          // передаем соль с сервера
-            />
-
-            {!hasTables ? (
-                <NoTablesMessage onAddTable={handleAddItem}/>
-            ) : loading ? (
-                <LoadingSpinner/>
-            ) : error ? (
-                <ErrorMessage message={error} onRetry={handleRetry}/>
-            ) : (
-                <PayTable
-                    data={data.transactions}
-                    activeTableId={activeTableId}
-                    permissions={data.permission}
+            {/* Оборачиваем только таблицу и контролы шифрования */}
+            <TableContainer>
+                {/* Контролы шифрования */}
+                <TableEncryptionControls
                     theme={theme}
-                    userTags={data.userTags}
-                    isEncrypted={isTableEncrypted} // используем синхронизированное состояние
-                    isLocked={isTableLocked}
+                    isOwner={data.permission?.is_owner}
+                    tableId={activeTableId}
+                    currentUser={auth.user}
+                    onEncryptionChange={handleEncryptionChange}
+                    tableTransactions={data.transactions}
+                    isEncryptedFromServer={data.is_encrypted}
+                    serverTableKey={data.tableKey}
+                    serverSalt={data.salt}
                 />
-            )}
+
+                {!hasTables ? (
+                    <NoTablesMessage onAddTable={handleAddItem}/>
+                ) : loading ? (
+                    <LoadingSpinner/>
+                ) : error ? (
+                    <ErrorMessage message={error} onRetry={handleRetry}/>
+                ) : (
+                    <PayTable
+                        data={data.transactions}
+                        activeTableId={activeTableId}
+                        permissions={data.permission}
+                        theme={theme}
+                        userTags={data.userTags}
+                        isEncrypted={isTableEncrypted}
+                        isLocked={isTableLocked}
+                    />
+                )}
+            </TableContainer>
         </AuthenticatedLayout>
     );
 }

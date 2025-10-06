@@ -7,6 +7,7 @@ use App\DTO\Admin\BanDTO;
 use App\DTO\Admin\UnbanDTO;
 use App\DTO\ChartDTO;
 use App\DTO\CryptoDTO;
+use App\DTO\DecryptDTO;
 use App\DTO\DestroyDTO;
 use App\DTO\NewTableDTO;
 use App\DTO\Table\AddUserDTO;
@@ -39,7 +40,8 @@ class AppServiceProvider extends ServiceProvider
         ChartDTO::class,
         BanDTO::class,
         UnbanDTO::class,
-        CryptoDTO::class
+        CryptoDTO::class,
+        DecryptDTO::class
     ];
     /**
      * Register any application services.

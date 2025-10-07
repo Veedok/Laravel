@@ -9,6 +9,8 @@ export default function TableRow({
                                      onEditStart,
                                      onShare,
                                      onDelete,
+                                     onEncrypt,
+                                     onDecrypt,
                                      hasPermission
                                  }) {
     const [isEditing, setIsEditing] = useState(false);
@@ -98,20 +100,58 @@ export default function TableRow({
                     </div>
                 ) : (
                     <>
-                        <div
-                            className={`font-medium truncate flex-grow ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
-                            {table.name}
+                        <div className="flex items-center gap-4 flex-grow">
+                            <div
+                                className={`font-medium truncate ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
+                                {table.name}
+                            </div>
+                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                                theme === 'dark' ? 'text-blue-300 bg-blue-900' : 'text-blue-700 bg-blue-100'
+                            }`}>
+                                {table.owner}
+                            </span>
+                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                                table.crypt
+                                    ? (theme === 'dark' ? 'text-green-300 bg-green-900' : 'text-green-700 bg-green-100')
+                                    : (theme === 'dark' ? 'text-gray-300 bg-gray-700' : 'text-gray-700 bg-gray-200')
+                            }`}>
+                                {table.crypt ? '🔒 Зашифрована' : '📄 Открыта'}
+                            </span>
                         </div>
-                        <span className={`ml-2 px-2 py-0.5 text-xs font-medium rounded-full ${
-                            theme === 'dark' ? 'text-blue-300 bg-blue-900' : 'text-blue-700 bg-blue-100'
-                        }`}>
-                            {table.owner}
-                        </span>
-                        <div className="flex space-x-2 sm:space-x-3">
+                        <div className="flex flex-wrap gap-2">
+                            {/* Кнопки шифрования/расшифровки - только для владельца */}
+                            {table.permissions?.is_owner && (
+                                <>
+                                    {!table.crypt ? (
+                                        <button
+                                            onClick={onEncrypt}
+                                            className={`px-3 py-1 rounded-md text-sm ${
+                                                theme === 'dark'
+                                                    ? 'bg-blue-900 text-blue-300 hover:bg-blue-800'
+                                                    : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                                            }`}
+                                        >
+                                            🔐 Шифровать
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={onDecrypt}
+                                            className={`px-3 py-1 rounded-md text-sm ${
+                                                theme === 'dark'
+                                                    ? 'bg-green-900 text-green-300 hover:bg-green-800'
+                                                    : 'bg-green-100 text-green-800 hover:bg-green-200'
+                                            }`}
+                                        >
+                                            🔓 Расшифровать
+                                        </button>
+                                    )}
+                                </>
+                            )}
+
                             {hasPermission(table.permissions, 'editTables') && (
                                 <button
                                     onClick={() => setIsEditing(true)}
-                                    className={`px-3 py-1 rounded-md text-sm sm:text-base ${
+                                    className={`px-3 py-1 rounded-md text-sm ${
                                         theme === 'dark'
                                             ? 'bg-blue-900 text-blue-300 hover:bg-blue-800'
                                             : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
@@ -123,7 +163,7 @@ export default function TableRow({
                             {hasPermission(table.permissions, 'invite') && (
                                 <button
                                     onClick={() => onShare(table)}
-                                    className={`px-3 py-1 rounded-md text-sm sm:text-base ${
+                                    className={`px-3 py-1 rounded-md text-sm ${
                                         theme === 'dark'
                                             ? 'bg-green-900 text-green-300 hover:bg-green-800'
                                             : 'bg-green-100 text-green-800 hover:bg-green-200'
@@ -135,7 +175,7 @@ export default function TableRow({
                             {hasPermission(table.permissions, 'removeTable') && (
                                 <button
                                     onClick={() => onDelete(table)}
-                                    className={`px-3 py-1 rounded-md text-sm sm:text-base ${
+                                    className={`px-3 py-1 rounded-md text-sm ${
                                         theme === 'dark'
                                             ? 'bg-red-900 text-red-300 hover:bg-red-800'
                                             : 'bg-red-100 text-red-800 hover:bg-red-200'

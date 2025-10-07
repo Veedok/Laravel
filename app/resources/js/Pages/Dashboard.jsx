@@ -3,7 +3,6 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {Head} from '@inertiajs/react';
 import PayTable from '@/Components/PayTable.jsx';
 import CarouselButtons from "@/Components/CarouselButtons.jsx";
-import TableEncryptionControls from "@/Pages/Crypto/EncryptionControls.jsx";
 import React, {useState, useEffect} from "react";
 import axios from 'axios';
 import EncryptionService from "@/Pages/Crypto/encryptionService.js";
@@ -200,7 +199,7 @@ export default function Dashboard({ theme, tables: initialTables, auth }) {
         try {
             setLoading(true);
             setError(null);
-            setUnlockError(null); // Очищаем ошибку разблокировки при загрузке новых данных
+            setUnlockError(null);
             const response = await axios.post(route('tableData'), {
                 tableId: tableId
             });
@@ -212,26 +211,19 @@ export default function Dashboard({ theme, tables: initialTables, auth }) {
             setIsTableEncrypted(serverData.is_encrypted || false);
 
             if (serverData.is_encrypted) {
-                // Проверяем, есть ли у нас РАСШИФРОВАННЫЙ ключ в localStorage
                 const hasDecryptedKey = localStorage.getItem(`table_${tableId}_dataKey`);
 
                 if (hasDecryptedKey) {
-                    // У нас есть расшифрованный ключ - данные разблокированы
                     setIsTableLocked(false);
                 } else if (serverData.tableKey && serverData.salt) {
-                    // Сервер прислал зашифрованные ключи - данные заблокированы
-                    // Сохраняем серверные ключи для будущей расшифровки
                     localStorage.setItem(`table_${tableId}_serverKey`, serverData.tableKey);
                     localStorage.setItem(`table_${tableId}_serverSalt`, serverData.salt);
                     setIsTableLocked(true);
                 } else {
-                    // Нет ключей - данные заблокированы
                     setIsTableLocked(true);
                 }
             } else {
-                // Таблица не зашифрована
                 setIsTableLocked(false);
-                // Очищаем все ключи
                 localStorage.removeItem(`table_${tableId}_dataKey`);
                 localStorage.removeItem(`table_${tableId}_serverKey`);
                 localStorage.removeItem(`table_${tableId}_serverSalt`);
@@ -249,24 +241,19 @@ export default function Dashboard({ theme, tables: initialTables, auth }) {
         if (!activeTableId) return;
 
         setUnlockLoading(true);
-        setUnlockError(null); // Очищаем предыдущие ошибки
+        setUnlockError(null);
 
         try {
-            // Пробуем разные источники ключей в порядке приоритета:
-
-            // 1. Сначала пробуем локальные зашифрованные ключи
             const storedEncryptedKeys = localStorage.getItem(`table_${activeTableId}_encryptedKeys`);
             if (storedEncryptedKeys) {
                 const encryptedKeys = JSON.parse(storedEncryptedKeys);
                 const currentUserKey = encryptedKeys[auth.user.id];
 
                 if (currentUserKey) {
-                    // Расшифровываем ключ данных из localStorage
                     const salt = EncryptionService.hexToUint8Array(currentUserKey.salt);
                     const kek = await EncryptionService.deriveKeyFromPassword(password, salt);
                     const dataKey = await EncryptionService.decryptDataKey(currentUserKey.encryptedDataKey, kek);
 
-                    // Сохраняем расшифрованный ключ
                     const exportedDataKey = await EncryptionService.exportKey(dataKey);
                     localStorage.setItem(`table_${activeTableId}_dataKey`, exportedDataKey);
 
@@ -276,22 +263,15 @@ export default function Dashboard({ theme, tables: initialTables, auth }) {
                 }
             }
 
-            // 2. Если локальных ключей нет, пробуем серверные ключи
             const serverKey = localStorage.getItem(`table_${activeTableId}_serverKey`);
             const serverSalt = localStorage.getItem(`table_${activeTableId}_serverSalt`);
 
             if (serverKey && serverSalt) {
                 try {
-                    // Преобразуем серверную соль из hex в Uint8Array
                     const salt = EncryptionService.hexToUint8Array(serverSalt);
-
-                    // Создаем KEK из пароля пользователя
                     const kek = await EncryptionService.deriveKeyFromPassword(password, salt);
-
-                    // Расшифровываем ключ данных с сервера
                     const dataKey = await EncryptionService.decryptDataKey(serverKey, kek);
 
-                    // Сохраняем расшифрованный ключ
                     const exportedDataKey = await EncryptionService.exportKey(dataKey);
                     localStorage.setItem(`table_${activeTableId}_dataKey`, exportedDataKey);
 
@@ -302,12 +282,9 @@ export default function Dashboard({ theme, tables: initialTables, auth }) {
                 } catch (serverKeyError) {
                     console.error('Ошибка расшифровки серверных ключей:', serverKeyError);
                     throw new Error('Неверный пароль');
-                } finally {
-                    setUnlockLoading(false);
                 }
             }
 
-            // 3. Если ничего не сработало
             throw new Error('Неверный пароль или ключи шифрования не найдены');
 
         } catch (error) {
@@ -317,14 +294,15 @@ export default function Dashboard({ theme, tables: initialTables, auth }) {
             setUnlockLoading(false);
         }
     };
+
     const handleLockTable = () => {
         if (!activeTableId) return;
 
-        // Очищаем только локальные ключи, но оставляем серверные метаданные
         localStorage.removeItem(`table_${activeTableId}_dataKey`);
         setIsTableLocked(true);
         handleEncryptionChange(true, true);
     };
+
     const handleClearUnlockError = () => {
         setUnlockError(null);
     };
@@ -429,7 +407,7 @@ export default function Dashboard({ theme, tables: initialTables, auth }) {
                 userTags={data.userTags}
                 isEncrypted={isTableEncrypted}
                 isLocked={isTableLocked}
-                onLockTable={handleLockTable} // Передаем функцию блокировки
+                onLockTable={handleLockTable}
             />
         );
     };
@@ -453,21 +431,8 @@ export default function Dashboard({ theme, tables: initialTables, auth }) {
                 activeTableId={activeTableId}
             />
 
-            {/* Оборачиваем только таблицу и контролы шифрования */}
+            {/* Оборачиваем только таблицу */}
             <TableContainer>
-                {/* Контролы шифрования */}
-                <TableEncryptionControls
-                    theme={theme}
-                    isOwner={data.permission?.is_owner}
-                    tableId={activeTableId}
-                    currentUser={auth.user}
-                    onEncryptionChange={handleEncryptionChange}
-                    tableTransactions={data.transactions}
-                    isEncryptedFromServer={data.is_encrypted}
-                    serverTableKey={data.tableKey}
-                    serverSalt={data.salt}
-                />
-
                 {renderContent()}
             </TableContainer>
         </AuthenticatedLayout>

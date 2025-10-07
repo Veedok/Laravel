@@ -11,6 +11,8 @@ use JsonException;
  * Связь пользователей с таблицами
  * @property mixed $is_owner
  * @property mixed $permissions
+ * @property mixed $key
+ * @property mixed $salt
  */
 class UserTable extends Pivot
 {
@@ -28,7 +30,8 @@ class UserTable extends Pivot
     ];
     protected $fillable = [
         'key',
-        'salt'
+        'salt',
+        'permissions',
     ];
     /**
      * Проверка прав пользователя

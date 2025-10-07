@@ -41,9 +41,10 @@ export default function TableUserManager({ tableId, permissions, theme }) {
 
             setUsers(prev => prev.map(user => {
                 if (user.id === userId) {
+                    const currentPermissions = user.permissions || []; // ← ЗАЩИТА ОТ NULL
                     const newPermissions = isChecked
-                        ? [...user.permissions, permission]
-                        : user.permissions.filter(p => p !== permission);
+                        ? [...currentPermissions, permission]
+                        : currentPermissions.filter(p => p !== permission);
                     return { ...user, permissions: newPermissions };
                 }
                 return user;
@@ -126,11 +127,11 @@ export default function TableUserManager({ tableId, permissions, theme }) {
                                                     <input
                                                         type="checkbox"
                                                         className="sr-only peer"
-                                                        checked={user.permissions.includes(key)}
+                                                        checked={(user.permissions || []).includes(key)} // ← ЗАЩИТА ОТ NULL
                                                         onChange={(e) => handlePermissionChange(user.id, key, e.target.checked)}
                                                     />
                                                     <div className={`relative w-11 h-6 ${theme === 'dark' ? 'bg-gray-600 peer-checked:bg-[#577ADE]' : 'bg-gray-300 peer-checked:bg-[#577ADE]'} rounded-full peer transition-colors duration-200`}>
-                                                        <div className={`absolute top-0.5 left-0.5 w-5 h-5 ${theme === 'dark' ? 'bg-gray-300' : 'bg-white'} rounded-full shadow-md transform transition-transform duration-200 ${user.permissions.includes(key) ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                                                        <div className={`absolute top-0.5 left-0.5 w-5 h-5 ${theme === 'dark' ? 'bg-gray-300' : 'bg-white'} rounded-full shadow-md transform transition-transform duration-200 ${(user.permissions || []).includes(key) ? 'translate-x-5' : 'translate-x-0'}`}></div>
                                                     </div>
                                                 </label>
                                             </div>

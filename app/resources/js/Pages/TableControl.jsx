@@ -14,7 +14,8 @@ export default function TableManager({ theme, tables, permissions, userRights })
             id,
             owner: tableData.owner,
             name: tableData.name,
-            permissions: tableData.permissions
+            permissions: tableData.permissions,
+            crypt: tableData.crypt
         }))
     );
     const [shareModalOpen, setShareModalOpen] = useState(false);
@@ -27,6 +28,7 @@ export default function TableManager({ theme, tables, permissions, userRights })
     });
 
     const hasPermission = (tablePermissions, permissionName) => {
+        if (!tablePermissions) return false;
         return tablePermissions?.is_owner ||
             (Array.isArray(tablePermissions?.permissions) &&
                 tablePermissions.permissions.includes(permissionName));

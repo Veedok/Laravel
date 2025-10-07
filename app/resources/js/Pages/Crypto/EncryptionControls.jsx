@@ -20,13 +20,11 @@ const TableEncryptionControls = ({
     const [modalType, setModalType] = useState('');
     const [passwords, setPasswords] = useState({});
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [currentPassword, setCurrentPassword] = useState('');
     const [tableUsers, setTableUsers] = useState([]);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
     const [messageType, setMessageType] = useState('');
     const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
-
     const isMobile = windowWidth < 768;
 
     useEffect(() => {
@@ -40,15 +38,10 @@ const TableEncryptionControls = ({
         setIsEncrypted(isEncryptedFromServer);
 
         if (isEncryptedFromServer) {
-            // Проверяем наличие РАСШИФРОВАННОГО ключа данных
             const hasDecryptedDataKey = localStorage.getItem(`table_${tableId}_dataKey`);
-
             if (hasDecryptedDataKey) {
-                // У нас есть расшифрованный ключ - данные разблокированы
                 setIsLocked(false);
             } else {
-                // Нет расшифрованного ключа - данные заблокированы
-                // Сохраняем серверные ключи для будущей расшифровки
                 if (serverTableKey && serverSalt) {
                     localStorage.setItem(`table_${tableId}_serverKey`, serverTableKey);
                     localStorage.setItem(`table_${tableId}_serverSalt`, serverSalt);
@@ -56,9 +49,7 @@ const TableEncryptionControls = ({
                 setIsLocked(true);
             }
         } else {
-            // Таблица не зашифрована
             setIsLocked(false);
-            // Очищаем все ключи
             localStorage.removeItem(`table_${tableId}_dataKey`);
             localStorage.removeItem(`table_${tableId}_serverKey`);
             localStorage.removeItem(`table_${tableId}_serverSalt`);
@@ -73,9 +64,6 @@ const TableEncryptionControls = ({
         buttonPrimary: theme === 'dark'
             ? 'bg-blue-600 hover:bg-blue-700 text-white'
             : 'bg-blue-500 hover:bg-blue-600 text-white',
-        buttonSecondary: theme === 'dark'
-            ? 'bg-gray-600 hover:bg-gray-700 text-white'
-            : 'bg-gray-200 hover:bg-gray-300 text-gray-700',
         input: theme === 'dark'
             ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
             : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500',
@@ -93,6 +81,7 @@ const TableEncryptionControls = ({
             : 'bg-gray-50 border-gray-200'
     };
 
+
     const showMessage = (text, type) => {
         setMessage(text);
         setMessageType(type);
@@ -107,7 +96,6 @@ const TableEncryptionControls = ({
         setModalType('');
         setPasswords({});
         setConfirmPassword('');
-        setCurrentPassword('');
     };
 
     // Реальный запрос для получения пользователей таблицы
@@ -119,8 +107,6 @@ const TableEncryptionControls = ({
             });
 
             const serverUsers = response.data;
-
-            // Добавляем текущего пользователя в список если его там нет
             const usersWithCurrent = [...serverUsers];
             const currentUserExists = serverUsers.some(user => user.id === currentUser.id);
 
@@ -132,7 +118,6 @@ const TableEncryptionControls = ({
                 });
             }
 
-            // Сортируем: текущий пользователь первый, остальные после
             const sortedUsers = usersWithCurrent.sort((a, b) => {
                 if (a.id === currentUser.id) return -1;
                 if (b.id === currentUser.id) return 1;
@@ -141,7 +126,6 @@ const TableEncryptionControls = ({
 
             setTableUsers(sortedUsers);
 
-            // Инициализируем пароли для всех пользователей
             const initialPasswords = {};
             sortedUsers.forEach(user => {
                 initialPasswords[user.id] = '';
@@ -341,82 +325,9 @@ const TableEncryptionControls = ({
         }
     };
 
-    // Разблокировка данных
+    // Разблокировка данных - УДАЛЕНА, т.к. теперь это в Dashboard
     const handleUnlock = async () => {
-        try {
-            if (!currentPassword) {
-                showMessage('Введите пароль', 'error');
-                return;
-            }
-
-            setLoading(true);
-
-            // Пробуем разные источники ключей в порядке приоритета:
-
-            // 1. Сначала пробуем локальные зашифрованные ключи
-            const storedEncryptedKeys = localStorage.getItem(`table_${tableId}_encryptedKeys`);
-            if (storedEncryptedKeys) {
-                const encryptedKeys = JSON.parse(storedEncryptedKeys);
-                const currentUserKey = encryptedKeys[currentUser.id];
-
-                if (currentUserKey) {
-                    // Расшифровываем ключ данных из localStorage
-                    const salt = EncryptionService.hexToUint8Array(currentUserKey.salt);
-                    const kek = await EncryptionService.deriveKeyFromPassword(currentPassword, salt);
-                    const dataKey = await EncryptionService.decryptDataKey(currentUserKey.encryptedDataKey, kek);
-
-                    // Сохраняем расшифрованный ключ
-                    const exportedDataKey = await EncryptionService.exportKey(dataKey);
-                    localStorage.setItem(`table_${tableId}_dataKey`, exportedDataKey);
-
-                    setIsLocked(false);
-                    onEncryptionChange?.(true, false);
-                    showMessage('Данные успешно разблокированы!', 'success');
-                    resetModal();
-                    return;
-                }
-            }
-
-            // 2. Если локальных ключей нет, пробуем серверные ключи
-            const serverKey = localStorage.getItem(`table_${tableId}_serverKey`);
-            const serverSalt = localStorage.getItem(`table_${tableId}_serverSalt`);
-
-            if (serverKey && serverSalt) {
-                try {
-                    // Преобразуем серверную соль из hex в Uint8Array
-                    const salt = EncryptionService.hexToUint8Array(serverSalt);
-
-                    // Создаем KEK из пароля пользователя
-                    const kek = await EncryptionService.deriveKeyFromPassword(currentPassword, salt);
-
-                    // Расшифровываем ключ данных с сервера
-                    const dataKey = await EncryptionService.decryptDataKey(serverKey, kek);
-
-                    // Сохраняем расшифрованный ключ
-                    const exportedDataKey = await EncryptionService.exportKey(dataKey);
-                    localStorage.setItem(`table_${tableId}_dataKey`, exportedDataKey);
-
-                    setIsLocked(false);
-                    onEncryptionChange?.(true, false);
-                    showMessage('Данные успешно разблокированы с серверными ключами!', 'success');
-                    resetModal();
-                    return;
-
-                } catch (serverKeyError) {
-                    console.error('Ошибка расшифровки серверных ключей:', serverKeyError);
-                    // Продолжаем к следующему варианту
-                }
-            }
-
-            // 3. Если ничего не сработало
-            showMessage('Неверный пароль или ключи шифрования не найдены', 'error');
-
-        } catch (error) {
-            console.error('Ошибка разблокировки:', error);
-            showMessage('Неверный пароль или ошибка разблокировки', 'error');
-        } finally {
-            setLoading(false);
-        }
+        // Эта функция больше не используется, разблокировка теперь в Dashboard
     };
 
     // Блокировка данных
@@ -427,6 +338,7 @@ const TableEncryptionControls = ({
         onEncryptionChange?.(true, true);
         showMessage('Данные заблокированы', 'success');
     };
+
 
     const openModal = async (type) => {
         setModalType(type);
@@ -444,13 +356,11 @@ const TableEncryptionControls = ({
             case 'decrypt':
                 handleDecrypt();
                 break;
-            case 'unlock':
-                handleUnlock();
-                break;
             default:
                 break;
         }
     };
+
 
     const handlePasswordChange = (userId, value) => {
         setPasswords(prev => ({
@@ -613,23 +523,6 @@ const TableEncryptionControls = ({
                         </p>
                     </div>
                 )
-            },
-            unlock: {
-                title: '🔑 Разблокировка данных',
-                content: (
-                    <>
-                        <p className="mb-4 text-gray-400">
-                            Введите ваш пароль для доступа к данным:
-                        </p>
-                        <input
-                            type="password"
-                            value={currentPassword}
-                            onChange={(e) => setCurrentPassword(e.target.value)}
-                            placeholder="Ваш пароль шифрования"
-                            className={`w-full p-3 border rounded ${themeClasses.input}`}
-                        />
-                    </>
-                )
             }
         };
 
@@ -682,7 +575,6 @@ const TableEncryptionControls = ({
                 </div>
             )}
 
-            {/* Изменяем верстку для мобильных устройств */}
             <div className={`${isMobile ? 'flex flex-col space-y-4' : 'flex items-center justify-between'}`}>
                 <div className={`flex items-center gap-3 ${isMobile ? 'justify-center text-center' : ''}`}>
                     <span className="text-xl">
@@ -712,28 +604,13 @@ const TableEncryptionControls = ({
                         >
                             Зашифровать таблицу
                         </button>
-                    ) : isLocked ? (
+                    ) : (
                         <button
-                            onClick={() => openModal('unlock')}
+                            onClick={() => openModal('decrypt')}
                             className={`px-4 py-2 rounded text-sm font-medium ${themeClasses.buttonPrimary}`}
                         >
-                            Разблокировать данные
+                            Расшифровать таблицу
                         </button>
-                    ) : (
-                        <div className={`flex gap-2 ${isMobile ? 'flex-col w-full' : ''}`}>
-                            <button
-                                onClick={handleLock}
-                                className={`px-4 py-2 rounded text-sm font-medium ${themeClasses.buttonSecondary} ${isMobile ? 'w-full' : ''}`}
-                            >
-                                Заблокировать
-                            </button>
-                            <button
-                                onClick={() => openModal('decrypt')}
-                                className={`px-4 py-2 rounded text-sm font-medium ${themeClasses.buttonPrimary} ${isMobile ? 'w-full' : ''}`}
-                            >
-                                Расшифровать
-                            </button>
-                        </div>
                     )}
                 </div>
             </div>

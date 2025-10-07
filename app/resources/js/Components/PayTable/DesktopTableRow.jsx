@@ -9,13 +9,10 @@ export default function DesktopTableRow({
                                             isLocked = false
                                         }) {
 
-    const displayTitle = isLocked ? '••••••••' : item.title;
-    const displaySum = isLocked ? '•••••' : formatCurrency(item.sum);
-
     return (
         <tr key={item.id}>
             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                {displayTitle}
+                {item.title}
             </td>
             <td className="px-6 py-4 whitespace-nowrap text-sm">
                 <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -26,7 +23,7 @@ export default function DesktopTableRow({
                     {item.changeBalance ? 'Приход' : 'Расход'}
                 </span>
             </td>
-            <td className="px-6 py-4 whitespace-nowrap text-sm">{displaySum}</td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm">{formatCurrency(item.sum)}</td>
             <td className="px-6 py-4 whitespace-nowrap text-sm">{item.date}</td>
             <td className="px-6 py-4 whitespace-nowrap text-sm">
                 <div className="flex space-x-2 action_row">

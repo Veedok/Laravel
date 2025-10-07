@@ -1,6 +1,6 @@
 // PayTable.jsx
 import React, { useState, useEffect, useMemo } from 'react';
-import { PlusIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, LockClosedIcon } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import '../../css/payTable.css';
 import TotalsSummary from "@/Components/PayTable/TotalsSummary.jsx";
@@ -17,7 +17,8 @@ export default function PayTable({
                                      theme,
                                      userTags,
                                      isEncrypted,
-                                     isLocked
+                                     isLocked,
+                                     onLockTable // Добавляем проп для блокировки
                                  }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -161,11 +162,8 @@ export default function PayTable({
                 const decrypted = await decryptData(transactions);
                 setDecryptedData(decrypted);
             } else if (isEncrypted && isLocked) {
-                setDecryptedData(transactions.map(item => ({
-                    ...item,
-                    title: '••••••••',
-                    sum: 0
-                })));
+                // Если данные заблокированы, не показываем ничего - блок с паролем будет в Dashboard
+                setDecryptedData([]);
             } else {
                 setDecryptedData(transactions);
             }
@@ -243,6 +241,14 @@ export default function PayTable({
         setEditingTransaction(null);
         setErrorMessage(null);
         setIsModalOpen(true);
+    };
+
+    // Блокировка таблицы
+    const handleLockTable = () => {
+        if (onLockTable) {
+            onLockTable();
+            showSuccess('Данные заблокированы');
+        }
     };
 
     // Редактирование транзакции
@@ -436,7 +442,10 @@ export default function PayTable({
             : 'bg-gray-50 text-gray-500',
         addButton: theme === 'dark'
             ? 'bg-blue-600 hover:bg-blue-700 text-white'
-            : 'bg-blue-500 hover:bg-blue-600 text-white'
+            : 'bg-blue-500 hover:bg-blue-600 text-white',
+        lockButton: theme === 'dark'
+            ? 'bg-gray-600 hover:bg-gray-700 text-white'
+            : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
     };
 
     return (
@@ -468,24 +477,38 @@ export default function PayTable({
                 />
             </div>
 
-            {/* Заголовок и кнопка добавления */}
+            {/* Заголовок и кнопки */}
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-semibold">
                     Транзакции {filterType && `(${filterType === 'income' ? 'Доходы' : 'Расходы'})`}
                 </h2>
 
-                {(permissions.is_owner || permissions.permissions.includes('createTransactions')) && (
-                    <button
-                        onClick={handleAddTransaction}
-                        disabled={isLocked}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium transition-colors ${
-                            themeClasses.addButton
-                        } ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                        <PlusIcon className="w-5 h-5" />
-                        Добавить
-                    </button>
-                )}
+                <div className="flex gap-2">
+                    {/* Кнопка блокировки - показываем только если таблица зашифрована и разблокирована */}
+                    {isEncrypted && !isLocked && (
+                        <button
+                            onClick={handleLockTable}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium transition-colors ${themeClasses.lockButton}`}
+                        >
+                            <LockClosedIcon className="w-5 h-5" />
+                            Заблокировать
+                        </button>
+                    )}
+
+                    {/* Кнопка добавления */}
+                    {(permissions.is_owner || permissions.permissions.includes('createTransactions')) && (
+                        <button
+                            onClick={handleAddTransaction}
+                            disabled={isLocked}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium transition-colors ${
+                                themeClasses.addButton
+                            } ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                            <PlusIcon className="w-5 h-5" />
+                            Добавить
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Desktop таблица */}

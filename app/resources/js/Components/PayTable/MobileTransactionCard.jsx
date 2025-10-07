@@ -26,9 +26,6 @@ export default function MobileTransactionCard({
         }
     }, [item]);
 
-    const displayTitle = isLocked ? '••••••••' : item.title;
-    const displaySum = isLocked ? '•••••' : formatCurrency(item.sum);
-
     return (
         <div className={`rounded-lg border ${
             theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'
@@ -48,14 +45,9 @@ export default function MobileTransactionCard({
                     </span>
 
                     <span className="font-semibold text-lg">
-                        {displaySum}
+                        {formatCurrency(item.sum)}
                     </span>
                 </div>
-                {isLocked && (
-                    <div className="text-xs text-gray-500 mt-1 text-center">
-                        🔒 Данные защищены
-                    </div>
-                )}
             </div>
 
             {/* Развернутое состояние с анимацией */}
@@ -69,7 +61,7 @@ export default function MobileTransactionCard({
             >
                 <div className="p-4 border-t border-gray-200 dark:border-gray-600">
                     <div className="flex justify-between items-start mb-3">
-                        <h3 className="font-semibold text-lg">{displayTitle}</h3>
+                        <h3 className="font-semibold text-lg">{item.title}</h3>
                         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
                             item.changeBalance
                                 ? theme === 'dark' ? 'bg-green-900 text-green-300' : 'bg-green-100 text-green-800'
@@ -82,7 +74,7 @@ export default function MobileTransactionCard({
                     <div className="grid grid-cols-2 gap-4 text-sm mb-3">
                         <div>
                             <span className="text-gray-500">Сумма:</span>
-                            <p className="font-medium">{displaySum}</p>
+                            <p className="font-medium">{formatCurrency(item.sum)}</p>
                         </div>
                         <div>
                             <span className="text-gray-500">Дата:</span>

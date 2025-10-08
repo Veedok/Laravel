@@ -1,11 +1,8 @@
-// Components/TableControl/PasswordPromptModal.jsx
 import React, { useState } from 'react';
-
 const PasswordPromptModal = ({ isOpen, onClose, table, theme, onSubmit }) => {
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-
     const themeClasses = {
         modalOverlay: theme === 'dark'
             ? 'bg-black bg-opacity-70'
@@ -26,17 +23,14 @@ const PasswordPromptModal = ({ isOpen, onClose, table, theme, onSubmit }) => {
             ? 'bg-red-900/30 border-red-700 text-red-300'
             : 'bg-red-50 border-red-200 text-red-800'
     };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!password.trim()) {
             setError('Введите пароль');
             return;
         }
-
         setLoading(true);
         setError('');
-
         try {
             await onSubmit(password);
             setPassword('');
@@ -50,28 +44,23 @@ const PasswordPromptModal = ({ isOpen, onClose, table, theme, onSubmit }) => {
             setLoading(false);
         }
     };
-
     const handleClose = () => {
         setPassword('');
         setError('');
         onClose();
     };
-
     if (!isOpen) return null;
-
     return (
         <div className={`fixed inset-0 flex items-center justify-center p-4 z-50 ${themeClasses.modalOverlay}`}>
             <div className={`rounded-lg p-6 max-w-md w-full border ${themeClasses.modalContent}`}>
                 <h2 className="text-lg font-bold mb-4">
                     🔓 Подтверждение расшифровки
                 </h2>
-
                 <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800">
                     <p className="text-blue-700 dark:text-blue-300 text-sm">
                         Для расшифровки таблицы <strong>"{table?.name}"</strong> необходимо подтвердить ваш пароль.
                     </p>
                 </div>
-
                 {error && (
                     <div className={`mb-4 p-3 rounded border ${themeClasses.error}`}>
                         <div className="flex items-center">
@@ -82,7 +71,6 @@ const PasswordPromptModal = ({ isOpen, onClose, table, theme, onSubmit }) => {
                         </div>
                     </div>
                 )}
-
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium mb-2">
@@ -103,7 +91,6 @@ const PasswordPromptModal = ({ isOpen, onClose, table, theme, onSubmit }) => {
                             autoFocus
                         />
                     </div>
-
                     <div className="flex gap-3 justify-end mt-6">
                         <button
                             type="button"
@@ -129,7 +116,6 @@ const PasswordPromptModal = ({ isOpen, onClose, table, theme, onSubmit }) => {
                         </button>
                     </div>
                 </form>
-
                 <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded border border-yellow-200 dark:border-yellow-800">
                     <p className="text-yellow-700 dark:text-yellow-300 text-xs">
                         ⚠️ После расшифровки все данные таблицы станут доступны в открытом виде для всех пользователей.
@@ -139,5 +125,4 @@ const PasswordPromptModal = ({ isOpen, onClose, table, theme, onSubmit }) => {
         </div>
     );
 };
-
 export default PasswordPromptModal;

@@ -1,7 +1,6 @@
 import {useState} from 'react';
 import {CheckIcon, XMarkIcon} from '@heroicons/react/24/outline';
 import TableUserManager from '../TableUserManager.jsx';
-
 export default function TableRow({
                                      table,
                                      theme,
@@ -17,7 +16,6 @@ export default function TableRow({
     const [editName, setEditName] = useState(table.name);
     const [editError, setEditError] = useState('');
     const [isShaking, setIsShaking] = useState(false);
-
     const handleEditSave = async () => {
         if (editName === table.name) {
             setIsShaking(true);
@@ -26,13 +24,11 @@ export default function TableRow({
             setTimeout(() => setEditError(''), 5000);
             return;
         }
-
         try {
             const response = await axios.patch(route('tableEdit'), {
                 id: table.id,
                 name: editName
             });
-
             onEditStart(table.id, editName);
             setIsEditing(false);
             setEditError('');
@@ -45,19 +41,16 @@ export default function TableRow({
             } else {
                 setEditError('Не удалось выполнить обновление. Проверьте соединение.');
             }
-
             setIsShaking(true);
             setTimeout(() => setIsShaking(false), 500);
             setTimeout(() => setEditError(''), 5000);
         }
     };
-
     const handleEditCancel = () => {
         setIsEditing(false);
         setEditName(table.name);
         setEditError('');
     };
-
     return (
         <div key={table.id} className="px-6 py-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -119,7 +112,6 @@ export default function TableRow({
                             </span>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                            {/* Кнопки шифрования/расшифровки - только для владельца */}
                             {table.permissions?.is_owner && (
                                 <>
                                     {!table.crypt ? (
@@ -147,7 +139,6 @@ export default function TableRow({
                                     )}
                                 </>
                             )}
-
                             {hasPermission(table.permissions, 'editTables') && (
                                 <button
                                     onClick={() => setIsEditing(true)}

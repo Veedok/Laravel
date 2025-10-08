@@ -32,12 +32,12 @@ class UpdateTransactionDTO extends AbstractDTO
         public ?int              $id = null,
         public ?string           $name = null,
         public ?bool             $changeBalance = false,
-        public ?float            $sum = null,
+        public float|string|null $sum = null,
         public ?Carbon           $date = null,
         public null|string|array $tags = null
     )
     {
-        if ($this->sum !== null) {
+        if (is_float($this->sum)) {
             $this->sum = round($this->sum, 2);
         }
     }
@@ -55,7 +55,7 @@ class UpdateTransactionDTO extends AbstractDTO
             'id' => 'required|integer',
             'name' => 'required_without_all:changeBalance,sum,date,tags|string|max:255',
             'type' => 'required_without_all:title,sum,date,tags|bool',
-            'sum' => 'required_without_all:title,changeBalance,date,tags|numeric',
+            'sum' => 'required_without_all:title,changeBalance,date,tags',
             'date' => 'required_without_all:sum,changeBalance,title,tags|date',
             'tags' => 'nullable|string'
         ]);

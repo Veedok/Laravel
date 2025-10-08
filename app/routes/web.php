@@ -13,10 +13,9 @@ use Inertia\Inertia;
 Route::get('/', function () {
     return redirect()->route('login');
 });
-Route::get('/test-encryption', function () {
-    return Inertia::render('Crypto/TestEncryptionPage');
-})->name('test-encryption');
+
 Route::middleware(['banned', 'auth', 'verified'])->group(function () {
+    Route::get('/aboutUs', [TablesController::class, 'aboutUs'])->name('aboutUs');
     Route::post('/cryptoData', [TablesController::class, 'crypto'])->name('cryptoTable');
     Route::post('/decryptData', [TablesController::class, 'decrypt'])->name('decryptTable');
     Route::get('/dashboard', [TablesController::class, 'mainPage'])->name('dashboard');

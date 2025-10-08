@@ -200,4 +200,11 @@ class TableService
         $user->tables()->attach($request->table->id, $data);
         return response()->json(null, 204);
     }
+
+    public function aboutUs()
+    {
+        return Inertia::render("AboutUs", [
+            'theme' => $this->getTheme()
+        ]);
+    }
 }

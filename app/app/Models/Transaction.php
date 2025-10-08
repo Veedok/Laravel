@@ -31,8 +31,7 @@ class Transaction extends Model
 
     protected $casts = [
         'type' => 'string',
-        'date' => 'datetime',
-        'sum' => 'float'
+        'date' => 'datetime'
     ];
 
     /**

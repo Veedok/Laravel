@@ -10,6 +10,7 @@ use App\DTO\TableDataDTO;
 use App\Enums\Permissions;
 use App\Models\Table;
 use App\Models\User;
+use App\Models\UserTable;
 use App\Traits\ThemeTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -66,10 +67,15 @@ class TableService
     {
         /** @var Table $table */
         $table = Table::find($request->id);
+        /** @var UserTable $userTable */
+        $userTable = $table->userTables()->where('user_id', $request->requestUser->id)->first();
         $result = [
             'permission' => $table->getUserPermissions($request->requestUser->id),
             'userTags' => $request->requestUser->tags()->pluck('name')->toArray(),
-            'transactions' => []
+            'transactions' => [],
+            "is_encrypted"=> !empty($userTable->key) && !empty($userTable->salt),
+            "tableKey" => $userTable->key,
+            "salt" => $userTable->salt,
         ];
         foreach ($table->transactions as $item) {
             $result['transactions'][] = [
@@ -112,10 +118,15 @@ class TableService
         $user = auth()->user();
         $tables = $user?->tables->mapWithKeys(static function ($table) use ($user) {
             $owner = $table->users()->where('is_owner', true)->first();
+            $test = $table->userTables()->where('is_owner', true)->first();
             return [$table->id => [
                 'owner' => sprintf('Владелец: %s, %s', $owner->email, $owner->name),
                 'name' => $table->name,
-                'permissions' => $table->getUserPermissions($user->id)
+                'permissions' => $table->getUserPermissions($user->id),
+                'crypt' => !empty($test->key) && !empty($test->salt),
+                "tableKey" => $test->key,
+                "salt" => $test->salt,
+
             ]];
         })->all();
         return Inertia::render("TableControl", [
@@ -180,10 +191,13 @@ class TableService
     public function share(AddUserDTO $request): JsonResponse
     {
         $user = User::find($request->user);
-        $user->tables()->attach($request->table, [
+        $data = [
             'permissions' => json_encode($request->permissions, JSON_THROW_ON_ERROR),
             'is_owner' => false,
-        ]);
+        ];
+        !empty($request->key) && $data['key'] = $request->key;
+        !empty($request->salt) && $data['salt'] = $request->salt;
+        $user->tables()->attach($request->table->id, $data);
         return response()->json(null, 204);
     }
 }

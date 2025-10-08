@@ -1,423 +1,215 @@
-// TransactionsTable.jsx
-import React, { useState, useMemo } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect, useMemo } from 'react';
+import { PlusIcon, LockClosedIcon } from '@heroicons/react/24/outline';
 import '../../css/payTable.css';
-import ToastNotification from './common/ToastNotification.jsx';
-import TotalsSummary from './PayTable/TotalsSummary.jsx';
-import DesktopTableRow from './PayTable/DesktopTableRow.jsx';
-import MobileTransactionCard from './PayTable/MobileTransactionCard.jsx';
-import ConfirmModal from "@/Components/common/ConfirmModal.jsx";
+import TotalsSummary from "@/Components/PayTable/TotalsSummary.jsx";
+import DesktopTableRow from "@/Components/PayTable/DesktopTableRow.jsx";
+import MobileTransactionCard from "@/Components/PayTable/MobileTransactionCard.jsx";
 import TransactionFormModal from "@/Components/PayTable/TransactionFormModal.jsx";
-import AddTransactionButton from "@/Components/PayTable/AddTransactionButton.jsx";
-import {ChevronUpIcon, ChevronDownIcon, ArrowsUpDownIcon, XMarkIcon} from '@heroicons/react/24/outline';
+import ConfirmModal from "@/Components/common/ConfirmModal.jsx";
+import useTransactions from '@/hooks/useTransactions.js';
+import useEncryptionOperations from '@/hooks/useEncryptionOperations.js';
+import useWindowSize from '@/hooks/useWindowSize.js';
+import { formatCurrency } from '@/Utils/currencyFormatters.js';
+import TransactionSaveService from '@/Services/TransactionSaveService.js';
 
-const TransactionsTable = ({ data, activeTableId, permissions, theme, userTags: initialUserTags }) => {
-    const [filterType, setFilterType] = useState(null);
-    const [isSortExpanded, setIsSortExpanded] = useState(false);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingId, setEditingId] = useState(null);
-    const [errorMessage, setErrorMessage] = useState(null);
-    const [successMessage, setSuccessMessage] = useState(null);
-    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-    const [itemToDelete, setItemToDelete] = useState(null);
-    const [isDeleting, setIsDeleting] = useState(false);
-    const [formData, setFormData] = useState({
-        id: null,
-        title: '',
-        changeBalance: true,
-        sum: '',
-        date: new Date().toISOString().split('T')[0],
-        tags: ''
-    });
-
-    const [transactions, setTransactions] = useState(data);
-    const [userTags, setUserTags] = useState(initialUserTags || []);
-
-    const [sortConfig, setSortConfig] = useState({
-        key: 'date',
-        direction: 'desc'
-    });
-    const filteredAndSortedTransactions = useMemo(() => {
-        let filteredArray = [...transactions];
-        if (filterType === 'income') {
-            filteredArray = filteredArray.filter(item => item.changeBalance);
-        } else if (filterType === 'expense') {
-            filteredArray = filteredArray.filter(item => !item.changeBalance);
-        }
-        filteredArray.sort((a, b) => {
-            let aValue, bValue;
-            switch (sortConfig.key) {
-                case 'title':
-                    aValue = a.title.toLowerCase();
-                    bValue = b.title.toLowerCase();
-                    break;
-                case 'type':
-                    aValue = a.changeBalance ? 1 : 0;
-                    bValue = b.changeBalance ? 1 : 0;
-                    break;
-                case 'sum':
-                    aValue = a.sum;
-                    bValue = b.sum;
-                    break;
-                case 'date':
-                    aValue = new Date(a.date.split('.').reverse().join('-'));
-                    bValue = new Date(b.date.split('.').reverse().join('-'));
-                    break;
-                default:
-                    return 0;
+export default function PayTable({
+                                     data,
+                                     activeTableId,
+                                     permissions,
+                                     theme,
+                                     userTags,
+                                     isEncrypted,
+                                     isLocked,
+                                     onLockTable
+                                 }) {
+    const { windowWidth, isMobile, compactTotals } = useWindowSize();
+    const {
+        transactions,
+        setTransactions,
+        isModalOpen,
+        isDeleteModalOpen,
+        editingTransaction,
+        itemToDelete,
+        filterType,
+        errorMessage,
+        successMessage,
+        isProcessing,
+        formData,
+        handleIncomeFilter,
+        handleExpenseFilter,
+        handleClearFilter,
+        handleAddTransaction,
+        handleLockTable: handleLockTableWithNotification,
+        handleEdit,
+        handleDeleteClick,
+        handleConfirmDelete,
+        handleInputChange,
+        handleAddNewTag,
+        handleModalClose,
+        handleDeleteModalClose,
+        showSuccess,
+        showError
+    } = useTransactions(data, activeTableId, isEncrypted, isLocked, onLockTable);
+    const { decryptedData } = useEncryptionOperations(activeTableId, isEncrypted, isLocked, transactions);
+    const displayData = useMemo(() => {
+        return decryptedData;
+    }, [decryptedData]);
+    const filteredData = useMemo(() => {
+        if (!filterType) return displayData;
+        return displayData.filter(item =>
+            filterType === 'income' ? item.changeBalance : !item.changeBalance
+        );
+    }, [displayData, filterType]);
+    const totals = useMemo(() => {
+        return displayData.reduce((acc, item) => {
+            const amount = typeof item.sum === 'string' ? parseFloat(item.sum) : item.sum;
+            if (!isNaN(amount)) {
+                if (item.changeBalance) {
+                    acc.income += amount;
+                } else {
+                    acc.expense += amount;
+                }
             }
-            if (aValue < bValue) {
-                return sortConfig.direction === 'asc' ? -1 : 1;
-            }
-            if (aValue > bValue) {
-                return sortConfig.direction === 'asc' ? 1 : -1;
-            }
-            return 0;
-        });
-
-        return filteredArray;
-    }, [transactions, sortConfig, filterType]);
-
-    const handleIncomeClick = () => {
-        setFilterType('income');
-    };
-
-    const handleExpenseClick = () => {
-        setFilterType('expense');
-    };
-
-    const handleClearFilter = () => {
-        setFilterType(null);
-    };
-
-    const sortedTransactions = useMemo(() => {
-        const sortedArray = [...transactions];
-
-        sortedArray.sort((a, b) => {
-            let aValue, bValue;
-
-            switch (sortConfig.key) {
-                case 'title':
-                    aValue = a.title.toLowerCase();
-                    bValue = b.title.toLowerCase();
-                    break;
-                case 'type':
-                    aValue = a.changeBalance ? 1 : 0;
-                    bValue = b.changeBalance ? 1 : 0;
-                    break;
-                case 'sum':
-                    aValue = a.sum;
-                    bValue = b.sum;
-                    break;
-                case 'date':
-                    aValue = new Date(a.date.split('.').reverse().join('-'));
-                    bValue = new Date(b.date.split('.').reverse().join('-'));
-                    break;
-                default:
-                    return 0;
-            }
-
-            if (aValue < bValue) {
-                return sortConfig.direction === 'asc' ? -1 : 1;
-            }
-            if (aValue > bValue) {
-                return sortConfig.direction === 'asc' ? 1 : -1;
-            }
-            return 0;
-        });
-
-        return sortedArray;
-    }, [transactions, sortConfig]);
-
-    const handleSort = (key) => {
-        setSortConfig(prevConfig => ({
-            key,
-            direction: prevConfig.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc'
-        }));
-    };
-
-    const renderSortIcon = (key) => {
-        if (sortConfig.key !== key) {
-            return <ArrowsUpDownIcon className="w-4 h-4 ml-1 opacity-50" />;
-        }
-
-        return sortConfig.direction === 'asc'
-            ? <ChevronUpIcon className="w-4 h-4 ml-1" />
-            : <ChevronDownIcon className="w-4 h-4 ml-1" />;
-    };
-
-    const addNewTag = (newTag) => {
-        if (!userTags.includes(newTag)) {
-            setUserTags(prev => [...prev, newTag]);
-        }
-    };
-
-    const showSuccess = (message) => {
-        setSuccessMessage(message);
-    };
-
-    const handleSubmit = async (e) => {
+            return acc;
+        }, { income: 0, expense: 0 });
+    }, [displayData]);
+    const handleSaveTransaction = async (e) => {
         e.preventDefault();
-        setErrorMessage(null);
-
-        const payload = {
-            id: editingId,
-            name: formData.title,
-            type: formData.changeBalance,
-            sum: parseFloat(formData.sum),
-            date: formData.date,
-            tableId: activeTableId,
-            tags: formData.tags,
-        };
-
         try {
-            const url = editingId ? route('updateData') : route('saveData');
-            const method = editingId ? 'put' : 'post';
-
-            const response = await axios[method](url, payload);
-
-            const newTransaction = {
-                id: response.data.id,
-                title: formData.title,
-                changeBalance: formData.changeBalance,
-                sum: parseFloat(formData.sum),
-                date: new Date(formData.date).toLocaleDateString('ru-RU')
-            };
-
-            setTransactions(prev =>
-                editingId
-                    ? prev.map(t => t.id === editingId ? newTransaction : t)
-                    : [...prev, newTransaction]
-            );
-
-            showSuccess(editingId ? 'Запись успешно обновлена' : 'Запись успешно добавлена');
-            resetForm();
-        } catch (error) {
-            if (error.response) {
-                const errorData = error.response.data;
-                setErrorMessage(
-                    errorData.message ||
-                    Object.values(errorData.errors || {}).flat().join('\n') ||
-                    'Ошибка сервера'
-                );
-            } else {
-                setErrorMessage('Не удалось выполнить запрос. Проверьте соединение.');
-            }
-        }
-    };
-
-    const handleEdit = (transaction) => {
-        setEditingId(transaction.id);
-        setFormData({
-            id: transaction.id,
-            title: transaction.title,
-            changeBalance: transaction.changeBalance,
-            sum: transaction.sum.toFixed(2),
-            date: new Date(transaction.date.split('.').reverse().join('-')).toISOString().split('T')[0],
-            tags: transaction.tags?.join(' ') || ''
-        });
-        setIsModalOpen(true);
-        setErrorMessage(null);
-    };
-
-    const handleDeleteClick = (id) => {
-        setItemToDelete(id);
-        setDeleteModalOpen(true);
-    };
-
-    const handleConfirmDelete = async () => {
-        if (!itemToDelete) return;
-
-        setIsDeleting(true);
-        try {
-            await axios.delete(route('deleteData'), {
-                data: { id: itemToDelete }
+            const result = await TransactionSaveService.saveTransaction({
+                formData,
+                editingTransaction,
+                activeTableId,
+                isEncrypted,
+                isLocked,
+                userTags
             });
-
-            setTransactions(prev => prev.filter(t => t.id !== itemToDelete));
-            showSuccess('Запись успешно удалена');
-            setDeleteModalOpen(false);
-            setItemToDelete(null);
-        } catch (error) {
-            if (error.response?.status === 404) {
-                showSuccess('Запись уже была удалена');
-            } else {
-                setErrorMessage(
-                    error.response?.data.message ||
-                    'Не удалось выполнить удаление. Проверьте соединение.'
+            if (result.success) {
+                setTransactions(prev =>
+                    editingTransaction
+                        ? prev.map(t => t.id === editingTransaction.id ? result.transaction : t)
+                        : [...prev, result.transaction]
                 );
+                showSuccess(editingTransaction ? 'Запись успешно обновлена' : 'Запись успешно добавлена');
+                handleModalClose();
+            } else {
+                showError(result.error);
             }
-        } finally {
-            setIsDeleting(false);
+        } catch (error) {
+            console.error('Ошибка при сохранении транзакции:', error);
+            showError('Не удалось выполнить запрос. Проверьте соединение.');
         }
     };
-
-    const handleCancelDelete = () => {
-        setDeleteModalOpen(false);
-        setItemToDelete(null);
+    const themeClasses = {
+        table: theme === 'dark'
+            ? 'bg-gray-800 text-white'
+            : 'bg-white text-gray-900',
+        tableHeader: theme === 'dark'
+            ? 'bg-gray-700 text-gray-300'
+            : 'bg-gray-50 text-gray-500',
+        addButton: theme === 'dark'
+            ? 'bg-blue-600 hover:bg-blue-700 text-white'
+            : 'bg-blue-500 hover:bg-blue-600 text-white',
+        lockButton: theme === 'dark'
+            ? 'bg-gray-600 hover:bg-gray-700 text-white'
+            : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
     };
-
-    const resetForm = () => {
-        setFormData({
-            id: null,
-            title: '',
-            changeBalance: true,
-            sum: '',
-            date: new Date().toISOString().split('T')[0]
-        });
-        setEditingId(null);
-        setIsModalOpen(false);
-        setErrorMessage(null);
-    };
-
-    const handleInputChange = (field, value) => {
-        setFormData(prev => ({
-            ...prev,
-            [field]: value
-        }));
-    };
-
-    const totals = transactions.reduce((acc, item) => {
-        if (item.changeBalance) {
-            acc.income += item.sum;
-        } else {
-            acc.expense += item.sum;
-        }
-        return acc;
-    }, { income: 0, expense: 0 });
-
-    const formatCurrency = (amount) => {
-        return amount.toLocaleString('ru-RU', {
-            style: 'currency',
-            currency: 'RUB',
-            minimumFractionDigits: 2
-        });
-    };
-
     return (
-        <div className={`space-y-6 table_container ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
+        <div>
             {successMessage && (
-                <ToastNotification
-                    message={successMessage}
-                    type="success"
-                    theme={theme}
-                    onClose={() => setSuccessMessage(null)}
-                    autoClose={true}
-                    autoCloseDuration={3000}
-                />
+                <div className="mb-4 p-3 bg-green-100 text-green-800 border border-green-200 rounded">
+                    {successMessage}
+                </div>
             )}
-
-            <TotalsSummary
-                totals={totals}
-                theme={theme}
-                formatCurrency={formatCurrency}
-                compact={true}
-                filterType={filterType}
-                onIncomeClick={handleIncomeClick}
-                onExpenseClick={handleExpenseClick}
-                onClearFilter={handleClearFilter}
-            />
-            <div className="md:hidden">
-                <div className={`rounded-lg mb-3 ${
-                    theme === 'dark'
-                        ? 'bg-gray-700 border border-gray-600'
-                        : 'bg-white border border-gray-200 shadow-sm'
-                }`}>
-                    <button
-                        onClick={() => setIsSortExpanded(!isSortExpanded)}
-                        className={`w-full p-3 flex items-center justify-between text-sm font-medium transition-colors ${
-                            theme === 'dark'
-                                ? 'hover:bg-gray-600 text-gray-200'
-                                : 'hover:bg-gray-50 text-gray-700'
-                        }`}
-                    >
-                        <div className="flex items-center">
-                            <ArrowsUpDownIcon className="w-4 h-4 mr-2"/>
-                            <span>Сортировка: {getSortLabel(sortConfig)}</span>
-                        </div>
-                        {isSortExpanded ? (
-                            <ChevronUpIcon className="w-4 h-4"/>
-                        ) : (
-                            <ChevronDownIcon className="w-4 h-4"/>
-                        )}
-                    </button>
-                    {isSortExpanded && (
-                        <div className="p-3 border-t border-gray-200 dark:border-gray-600">
-                            <select
-                                className={`w-full p-2 text-sm rounded border focus:outline-none focus:ring-1 transition-all ${
-                                    theme === 'dark'
-                                        ? 'bg-gray-600 border-gray-500 text-white focus:ring-blue-400 focus:border-blue-400'
-                                        : 'bg-gray-50 border-gray-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500'
-                                }`}
-                                value={`${sortConfig.key}-${sortConfig.direction}`}
-                                onChange={(e) => {
-                                    const [key, direction] = e.target.value.split('-');
-                                    setSortConfig({key, direction});
-                                    setIsSortExpanded(false);
-                                }}
-                                size={6}
-                            >
-                                <option value="date-desc">📅 Новые сначала</option>
-                                <option value="date-asc">📅 Старые сначала</option>
-                                <option value="title-asc">📝 А-Я</option>
-                                <option value="title-desc">📝 Я-А</option>
-                                <option value="sum-desc">💰 По убыванию</option>
-                                <option value="sum-asc">💰 По возрастанию</option>
-                                <option value="type-desc">🔄 Доходы сначала</option>
-                                <option value="type-asc">🔄 Расходы сначала</option>
-                            </select>
-                        </div>
+            {errorMessage && (
+                <div className="mb-4 p-3 bg-red-100 text-red-800 border border-red-200 rounded">
+                    {errorMessage}
+                </div>
+            )}
+            <div className="mb-6">
+                <TotalsSummary
+                    totals={totals}
+                    theme={theme}
+                    formatCurrency={formatCurrency}
+                    compact={compactTotals}
+                    filterType={filterType}
+                    onIncomeClick={handleIncomeFilter}
+                    onExpenseClick={handleExpenseFilter}
+                    onClearFilter={handleClearFilter}
+                    isLocked={isLocked}
+                />
+            </div>
+            <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold">
+                    Транзакции {filterType && `(${filterType === 'income' ? 'Доходы' : 'Расходы'})`}
+                </h2>
+                <div className="flex gap-2">
+                    {isEncrypted && !isLocked && (
+                        <button
+                            onClick={handleLockTableWithNotification}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium transition-colors ${themeClasses.lockButton}`}
+                        >
+                            <LockClosedIcon className="w-5 h-5" />
+                            Заблокировать
+                        </button>
+                    )}
+                    {(permissions.is_owner || permissions.permissions.includes('addTransaction')) && (
+                        <button
+                            onClick={handleAddTransaction}
+                            disabled={isLocked}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium transition-colors ${
+                                themeClasses.addButton
+                            } ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                            <PlusIcon className="w-5 h-5" />
+                            Добавить
+                        </button>
                     )}
                 </div>
             </div>
-            <div className="hidden md:block">
-                <table className="min-w-full divide-y">
-                    <thead className={theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'}>
-                    <tr>
-                        <th
-                            className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:opacity-80"
-                            onClick={() => handleSort('title')}
-                        >
-                            <div className="flex items-center">
+            {!isMobile && (
+                <div className={`rounded-lg border overflow-hidden ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
+                    <table className={`min-w-full divide-y divide-gray-200 dark:divide-gray-700 ${themeClasses.table}`}>
+                        <thead className={themeClasses.tableHeader}>
+                        <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                                 Название
-                                {renderSortIcon('title')}
-                            </div>
-                        </th>
-                        <th
-                            className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:opacity-80"
-                            onClick={() => handleSort('type')}
-                        >
-                            <div className="flex items-center">
-                                Тип операции
-                                {renderSortIcon('type')}
-                            </div>
-                        </th>
-                        <th
-                            className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:opacity-80"
-                            onClick={() => handleSort('sum')}
-                        >
-                            <div className="flex items-center">
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                                Тип
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                                 Сумма
-                                {renderSortIcon('sum')}
-                            </div>
-                        </th>
-                        <th
-                            className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:opacity-80"
-                            onClick={() => handleSort('date')}
-                        >
-                            <div className="flex items-center">
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                                 Дата
-                                {renderSortIcon('date')}
-                            </div>
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider action_head">Действия</th>
-                    </tr>
-                    </thead>
-                    <tbody className={`divide-y ${
-                        theme === 'dark' ? 'bg-gray-800 divide-gray-700' : 'bg-white divide-gray-200'
-                    }`}>
-                    {filteredAndSortedTransactions.map((item) => (
-                        <DesktopTableRow
+                            </th>
+                            <th className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
+                                Действия
+                            </th>
+                        </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                        {filteredData.map((item) => (
+                            <DesktopTableRow
+                                key={item.id}
+                                item={item}
+                                theme={theme}
+                                formatCurrency={formatCurrency}
+                                onEdit={handleEdit}
+                                onDelete={handleDeleteClick}
+                                permissions={permissions}
+                                isLocked={isLocked}
+                            />
+                        ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+            {isMobile && (
+                <div className="space-y-4">
+                    {filteredData.map((item) => (
+                        <MobileTransactionCard
                             key={item.id}
                             item={item}
                             theme={theme}
@@ -425,65 +217,35 @@ const TransactionsTable = ({ data, activeTableId, permissions, theme, userTags: 
                             onEdit={handleEdit}
                             onDelete={handleDeleteClick}
                             permissions={permissions}
+                            isLocked={isLocked}
                         />
                     ))}
-                    </tbody>
-                </table>
-            </div>
-
-            <div className="md:hidden space-y-3">
-                {filteredAndSortedTransactions.map((item) => (
-                    <MobileTransactionCard
-                        key={item.id}
-                        item={item}
-                        theme={theme}
-                        formatCurrency={formatCurrency}
-                        onEdit={handleEdit}
-                        onDelete={handleDeleteClick}
-                        permissions={permissions}
-                    />
-                ))}
-            </div>
-            <AddTransactionButton
-                onClick={() => setIsModalOpen(true)}
-                theme={theme}
-                permissions={permissions}
-            />
-            <ConfirmModal
-                isOpen={deleteModalOpen}
-                onClose={handleCancelDelete}
-                onConfirm={handleConfirmDelete}
-                title="Подтверждение удаления"
-                message="Вы уверены, что хотите удалить эту запись? Это действие нельзя отменить."
-                theme={theme}
-                isProcessing={isDeleting}
-            />
+                </div>
+            )}
             <TransactionFormModal
                 isOpen={isModalOpen}
-                onClose={resetForm}
-                onSubmit={handleSubmit}
+                onClose={handleModalClose}
+                onSubmit={handleSaveTransaction}
                 formData={formData}
                 onInputChange={handleInputChange}
                 errorMessage={errorMessage}
                 theme={theme}
-                editingId={editingId}
+                editingId={editingTransaction?.id}
                 userTags={userTags}
-                onAddNewTag={addNewTag}
+                onAddNewTag={handleAddNewTag}
+                isProcessing={isProcessing}
+            />
+            <ConfirmModal
+                isOpen={isDeleteModalOpen}
+                onClose={handleDeleteModalClose}
+                onConfirm={handleConfirmDelete}
+                title="Подтверждение удаления"
+                message="Вы уверены, что хотите удалить эту запись? Это действие нельзя отменить."
+                confirmText="Да, удалить"
+                cancelText="Нет, отменить"
+                theme={theme}
+                isProcessing={isProcessing}
             />
         </div>
     );
-};
-const getSortLabel = (sortConfig) => {
-    const labels = {
-        'date-desc': 'Дата (новые сначала)',
-        'date-asc': 'Дата (старые сначала)',
-        'title-asc': 'Название (А-Я)',
-        'title-desc': 'Название (Я-А)',
-        'sum-desc': 'Сумма (по убыванию)',
-        'sum-asc': 'Сумма (по возрастанию)',
-        'type-desc': 'Тип (доходы сначала)',
-        'type-asc': 'Тип (расходы сначала)'
-    };
-    return labels[`${sortConfig.key}-${sortConfig.direction}`] || 'Дата';
-};
-export default TransactionsTable;
+}

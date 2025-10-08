@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+// TableControl.jsx
 import { Head } from '@inertiajs/react';
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.jsx";
 import '../../css/TableControll.css';
@@ -6,115 +6,66 @@ import TableRow from '../Components/TableControl/TableRow.jsx';
 import ShareModal from '../Components/TableControl/ShareModal.jsx';
 import ConfirmModal from '../Components/common/ConfirmModal.jsx';
 import ToastNotification from '../Components/common/ToastNotification.jsx';
+import EncryptionModal from '../Components/TableControl/EncryptionModal.jsx';
+import PasswordPromptModal from '../Components/TableControl/PasswordPromptModal.jsx';
+import useToast from "@/hooks/useToast.js";
+import useTableManager from '@/hooks/useTableManager.js';
+import useEncryptionManager from '@/hooks/useEncryptionManager.js';
+import { useEffect } from 'react';
 
+export default function TableManager({ theme, tables: initialTables, permissions, userRights, auth }) {
+    const { toast, showSuccess, showError, hideToast } = useToast();
+    const {
+        localTables,
+        shareModalOpen,
+        deleteModalOpen,
+        currentTable,
+        setShareModalOpen,
+        setDeleteModalOpen,
+        hasPermission,
+        handleShare,
+        submitDelete,
+        handleEditStart,
+        openShareModal,
+        openDeleteModal,
+        updateTableCryptStatus
+    } = useTableManager(initialTables, showSuccess, showError);
+    const {
+        encryptionModalOpen,
+        passwordPromptOpen,
+        currentTable: encryptionTable,
+        setEncryptionModalOpen,
+        setPasswordPromptOpen,
+        openEncryptionModal,
+        handleEncryptionSubmit,
+        handlePasswordSubmit
+    } = useEncryptionManager(auth, showSuccess, showError);
 
-export default function TableManager({ theme, tables, permissions, userRights }) {
-    const [localTables, setLocalTables] = useState(
-        Object.entries(tables).map(([id, tableData]) => ({
-            id,
-            owner: tableData.owner,
-            name: tableData.name,
-            permissions: tableData.permissions
-        }))
-    );
-    const [shareModalOpen, setShareModalOpen] = useState(false);
-    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-    const [currentTable, setCurrentTable] = useState(null);
-    const [toast, setToast] = useState({
-        show: false,
-        message: '',
-        type: 'success'
-    });
+    useEffect(() => {
+        Object.entries(initialTables).forEach(([tableId, tableData]) => {
+            if (tableData.crypt && tableData.tableKey && tableData.salt) {
+                localStorage.setItem(`table_${tableId}_serverKey`, tableData.tableKey);
+                localStorage.setItem(`table_${tableId}_serverSalt`, tableData.salt);
 
-    const hasPermission = (tablePermissions, permissionName) => {
-        return tablePermissions?.is_owner ||
-            (Array.isArray(tablePermissions?.permissions) &&
-                tablePermissions.permissions.includes(permissionName));
-    };
-
-    const showNotification = (message, type = 'success') => {
-        setToast({
-            show: true,
-            message,
-            type
+                console.log(`Сохранены серверные ключи для таблицы ${tableId}`);
+            }
         });
-
-        setTimeout(() => {
-            setToast(prev => ({ ...prev, show: false }));
-        }, 5000);
-    };
-
-    const showSuccess = (message) => showNotification(message, 'success');
-    const showError = (message) => showNotification(message, 'error');
-
-    const handleShare = async (shareData) => {
-        try {
-            await axios.post(route('tableShare'), shareData, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                }
-            });
-
-            showSuccess(`Доступ к таблице "${currentTable.name}" предоставлен`);
-            setShareModalOpen(false);
-            return true;
-        } catch (error) {
-            if (error.response) {
-                showError(error.response.data.message ||
-                    `Ошибка при предоставлении доступа (код: ${error.response.status})`);
-            } else {
-                showError('Не удалось предоставить доступ. Проверьте соединение.');
-            }
-            throw error;
+    }, [initialTables]);
+    const handleEncryptionWithUpdate = async (passwords, users) => {
+        const result = await handleEncryptionSubmit(passwords, users);
+        if (result?.success && encryptionTable) {
+            updateTableCryptStatus(encryptionTable.id, result.crypt);
         }
     };
-
-    const submitDelete = async () => {
-        if (!currentTable) {
-            setDeleteModalOpen(false);
-            return;
-        }
-
-        try {
-            await axios.delete(route('tableDelete'), {
-                data: {id: currentTable.id}
-            });
-
-            setLocalTables(prev => prev.filter(table => table.id !== currentTable.id));
-            showSuccess('Таблица успешно удалена');
-        } catch (error) {
-            if (error.response) {
-                showError(error.response.data.message ||
-                    `Ошибка при удалении (код: ${error.response.status})`);
-            } else {
-                showError('Не удалось выполнить удаление. Проверьте соединение.');
-            }
-        } finally {
-            setDeleteModalOpen(false);
-            setCurrentTable(null);
+    const handlePasswordWithUpdate = async (password) => {
+        const result = await handlePasswordSubmit(password);
+        if (result?.success && encryptionTable) {
+            updateTableCryptStatus(encryptionTable.id, result.crypt);
         }
     };
-
-    const handleEditStart = (id, newName) => {
-        setLocalTables(prev =>
-            prev.map(table =>
-                table.id === id ? { ...table, name: newName } : table
-            )
-        );
-        showSuccess('Название таблицы успешно изменено');
+    const handleTableEncryption = (table, action) => {
+        openEncryptionModal(table, action);
     };
-
-    const openShareModal = (table) => {
-        setCurrentTable(table);
-        setShareModalOpen(true);
-    };
-
-    const openDeleteModal = (table) => {
-        setCurrentTable(table);
-        setDeleteModalOpen(true);
-    };
-
     return (
         <AuthenticatedLayout
             header={
@@ -124,7 +75,7 @@ export default function TableManager({ theme, tables, permissions, userRights })
             }
             theme={theme}
         >
-            <Head title="Таблица Баланса" />
+            <Head title="Управление таблицами" />
             <div className="container mx-auto px-4 py-8">
                 <div className={`shadow-md rounded-lg overflow-hidden ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
                     <div className={`px-6 py-4 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
@@ -132,7 +83,6 @@ export default function TableManager({ theme, tables, permissions, userRights })
                             Управление таблицами
                         </h2>
                     </div>
-
                     <div className={`divide-y ${theme === 'dark' ? 'divide-gray-700' : 'divide-gray-200'}`}>
                         {localTables.map(table => (
                             <TableRow
@@ -143,12 +93,13 @@ export default function TableManager({ theme, tables, permissions, userRights })
                                 onEditStart={handleEditStart}
                                 onShare={openShareModal}
                                 onDelete={openDeleteModal}
+                                onEncrypt={() => handleTableEncryption(table, 'encrypt')}
+                                onDecrypt={() => handleTableEncryption(table, 'decrypt')}
                                 hasPermission={hasPermission}
                             />
                         ))}
                     </div>
                 </div>
-
                 <ShareModal
                     isOpen={shareModalOpen}
                     onClose={() => setShareModalOpen(false)}
@@ -157,28 +108,38 @@ export default function TableManager({ theme, tables, permissions, userRights })
                     permissions={permissions}
                     onShare={handleShare}
                 />
-
+                <EncryptionModal
+                    isOpen={encryptionModalOpen}
+                    onClose={() => setEncryptionModalOpen(false)}
+                    table={encryptionTable}
+                    theme={theme}
+                    auth={auth}
+                    onSubmit={handleEncryptionWithUpdate}
+                />
+                <PasswordPromptModal
+                    isOpen={passwordPromptOpen}
+                    onClose={() => setPasswordPromptOpen(false)}
+                    table={encryptionTable}
+                    theme={theme}
+                    onSubmit={handlePasswordWithUpdate}
+                />
                 <ConfirmModal
                     isOpen={deleteModalOpen}
-                    onClose={() => {
-                        setDeleteModalOpen(false);
-                        setDeleteError('');
-                    }}
+                    onClose={() => setDeleteModalOpen(false)}
                     onConfirm={submitDelete}
                     title="Удалить таблицу"
                     message={`Вы уверены, что хотите удалить таблицу "${currentTable?.name}"? Это действие нельзя отменить.`}
                     theme={theme}
                 />
+                {toast.show && (
+                    <ToastNotification
+                        message={toast.message}
+                        type={toast.type}
+                        onClose={hideToast}
+                        theme={theme}
+                    />
+                )}
             </div>
-
-            {toast.show && (
-                <ToastNotification
-                    message={toast.message}
-                    type={toast.type}
-                    onClose={() => setToast(prev => ({ ...prev, show: false }))}
-                    theme={theme}
-                />
-            )}
         </AuthenticatedLayout>
     );
 }

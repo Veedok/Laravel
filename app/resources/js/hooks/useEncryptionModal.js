@@ -65,7 +65,7 @@ export default function useEncryptionModal(table, auth) {
             if (user.id === auth.user.id) continue;
             const password = passwords[user.id];
             if (!password || password.length < 6) {
-                setError(`Пароль для ${user.mail} должен быть не менее 6 символов`);
+                setError(`Пароль для ${user.email} должен быть не менее 6 символов`);
                 return false;
             }
         }

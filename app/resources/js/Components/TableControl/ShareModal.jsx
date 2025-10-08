@@ -3,6 +3,7 @@ import Modal from "@/Components/TableControl/Modal.jsx";
 import { Dialog } from '@headlessui/react';
 import useShareModal from '@/hooks/useShareModal.js';
 import ShareService from '@/Services/ShareService.js';
+import PasswordInput from '@/Components/UI/PasswordInput.jsx';
 
 export default function ShareModal({
                                        isOpen,
@@ -112,15 +113,15 @@ export default function ShareModal({
                                 <label className={`block text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
                                     Пароль для пользователя
                                 </label>
-                                <input
-                                    type="password"
-                                    placeholder="Введите пароль для нового пользователя"
+                                <PasswordInput
                                     value={userPassword}
                                     onChange={(e) => {
                                         setUserPassword(e.target.value);
                                         setPasswordError('');
                                     }}
-                                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${themeClasses.input} ${passwordError ? 'border-red-500' : ''}`}
+                                    placeholder="Введите пароль для нового пользователя"
+                                    theme={theme}
+                                    minLength={6}
                                 />
                                 {passwordError && <p className="text-red-500 text-sm mt-1">{passwordError}</p>}
                                 <p className={`text-xs mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -192,15 +193,15 @@ export default function ShareModal({
                         <p className={`mb-4 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
                             Для добавления пользователя <strong>{selectedUser?.name}</strong> в зашифрованную таблицу необходимо сначала разблокировать её.
                         </p>
-                        <input
-                            type="password"
-                            placeholder="Введите ваш пароль для разблокировки таблицы..."
+                        <PasswordInput
                             value={unlockPassword}
                             onChange={(e) => {
                                 setUnlockPassword(e.target.value);
                                 setPasswordError('');
                             }}
-                            className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${themeClasses.input} ${passwordError ? 'border-red-500' : ''}`}
+                            placeholder="Введите ваш пароль для разблокировки таблицы..."
+                            theme={theme}
+                            minLength={6}
                         />
                         {passwordError && <p className="text-red-500 text-sm mt-2">{passwordError}</p>}
                     </div>

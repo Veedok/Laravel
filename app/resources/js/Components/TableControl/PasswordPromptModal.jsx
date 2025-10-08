@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import PasswordInput from '@/Components/UI/PasswordInput.jsx';
+
 const PasswordPromptModal = ({ isOpen, onClose, table, theme, onSubmit }) => {
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -16,9 +18,6 @@ const PasswordPromptModal = ({ isOpen, onClose, table, theme, onSubmit }) => {
         buttonSecondary: theme === 'dark'
             ? 'bg-gray-600 hover:bg-gray-700 text-white'
             : 'bg-gray-200 hover:bg-gray-300 text-gray-700',
-        input: theme === 'dark'
-            ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-            : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500',
         error: theme === 'dark'
             ? 'bg-red-900/30 border-red-700 text-red-300'
             : 'bg-red-50 border-red-200 text-red-800'
@@ -76,19 +75,16 @@ const PasswordPromptModal = ({ isOpen, onClose, table, theme, onSubmit }) => {
                         <label className="block text-sm font-medium mb-2">
                             Введите ваш пароль:
                         </label>
-                        <input
-                            type="password"
+                        <PasswordInput
                             value={password}
                             onChange={(e) => {
                                 setPassword(e.target.value);
                                 if (error) setError('');
                             }}
                             placeholder="Ваш пароль шифрования"
-                            className={`w-full p-3 border rounded-lg ${themeClasses.input} ${
-                                error ? 'border-red-500' : ''
-                            }`}
-                            disabled={loading}
+                            theme={theme}
                             autoFocus
+                            disabled={loading}
                         />
                     </div>
                     <div className="flex gap-3 justify-end mt-6">

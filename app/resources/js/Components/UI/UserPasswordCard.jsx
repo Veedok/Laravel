@@ -1,5 +1,6 @@
 import React from 'react';
 import { getUserCardClasses } from '@/Utils/userHelpers.js';
+import PasswordInput from '@/Components/UI/PasswordInput.jsx';
 const UserPasswordCard = ({
                               user,
                               isCurrentUser,
@@ -26,7 +27,7 @@ const UserPasswordCard = ({
                         )}
                     </div>
                     <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {user.mail}
+                        {isCurrentUser ? user.mail : user.email}
                     </div>
                 </div>
             </div>
@@ -35,16 +36,12 @@ const UserPasswordCard = ({
                     <label className="block text-sm font-medium mb-1">
                         Пароль {isCurrentUser && 'для вас'}:
                     </label>
-                    <input
-                        type="password"
+                    <PasswordInput
                         value={password}
                         onChange={(e) => onPasswordChange(user.id, e.target.value)}
                         placeholder={`Введите пароль${isCurrentUser ? ' для себя' : ` для ${user.name}`}`}
-                        className={`w-full p-2 border rounded text-sm ${
-                            theme === 'dark'
-                                ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                                : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                        } ${isCurrentUser ? 'border-blue-500' : ''}`}
+                        className={isCurrentUser ? 'border-blue-500' : ''}
+                        theme={theme}
                         minLength={6}
                     />
                 </div>
@@ -54,16 +51,12 @@ const UserPasswordCard = ({
                             <label className="block text-sm font-medium mb-1">
                                 Подтверждение пароля:
                             </label>
-                            <input
-                                type="password"
+                            <PasswordInput
                                 value={confirmPassword}
-                                onChange={(e) => onConfirmPasswordChange(e.target.value)} // ИСПРАВЛЕНО: передаем значение
+                                onChange={(e) => onConfirmPasswordChange(e.target.value)}
                                 placeholder="Повторите ваш пароль"
-                                className={`w-full p-2 border rounded text-sm ${
-                                    theme === 'dark'
-                                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                                } border-blue-500`}
+                                className="border-blue-500"
+                                theme={theme}
                                 minLength={6}
                             />
                             {password && confirmPassword && (
@@ -88,5 +81,4 @@ const UserPasswordCard = ({
         </div>
     );
 };
-
 export default UserPasswordCard;

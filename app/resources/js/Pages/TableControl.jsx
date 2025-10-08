@@ -11,8 +11,9 @@ import PasswordPromptModal from '../Components/TableControl/PasswordPromptModal.
 import useToast from "@/hooks/useToast.js";
 import useTableManager from '@/hooks/useTableManager.js';
 import useEncryptionManager from '@/hooks/useEncryptionManager.js';
+import { useEffect } from 'react';
 
-export default function TableManager({ theme, tables, permissions, userRights, auth }) {
+export default function TableManager({ theme, tables: initialTables, permissions, userRights, auth }) {
     const { toast, showSuccess, showError, hideToast } = useToast();
     const {
         localTables,
@@ -28,7 +29,7 @@ export default function TableManager({ theme, tables, permissions, userRights, a
         openShareModal,
         openDeleteModal,
         updateTableCryptStatus
-    } = useTableManager(tables, showSuccess, showError);
+    } = useTableManager(initialTables, showSuccess, showError);
     const {
         encryptionModalOpen,
         passwordPromptOpen,
@@ -39,6 +40,17 @@ export default function TableManager({ theme, tables, permissions, userRights, a
         handleEncryptionSubmit,
         handlePasswordSubmit
     } = useEncryptionManager(auth, showSuccess, showError);
+
+    useEffect(() => {
+        Object.entries(initialTables).forEach(([tableId, tableData]) => {
+            if (tableData.crypt && tableData.tableKey && tableData.salt) {
+                localStorage.setItem(`table_${tableId}_serverKey`, tableData.tableKey);
+                localStorage.setItem(`table_${tableId}_serverSalt`, tableData.salt);
+
+                console.log(`Сохранены серверные ключи для таблицы ${tableId}`);
+            }
+        });
+    }, [initialTables]);
     const handleEncryptionWithUpdate = async (passwords, users) => {
         const result = await handleEncryptionSubmit(passwords, users);
         if (result?.success && encryptionTable) {

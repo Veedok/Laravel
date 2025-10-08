@@ -153,7 +153,7 @@ export default function PayTable({
                             Заблокировать
                         </button>
                     )}
-                    {(permissions.is_owner || permissions.permissions.includes('createTransactions')) && (
+                    {(permissions.is_owner || permissions.permissions.includes('addTransaction')) && (
                         <button
                             onClick={handleAddTransaction}
                             disabled={isLocked}

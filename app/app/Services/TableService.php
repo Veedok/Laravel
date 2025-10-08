@@ -124,6 +124,9 @@ class TableService
                 'name' => $table->name,
                 'permissions' => $table->getUserPermissions($user->id),
                 'crypt' => !empty($test->key) && !empty($test->salt),
+                "tableKey" => $test->key,
+                "salt" => $test->salt,
+
             ]];
         })->all();
         return Inertia::render("TableControl", [

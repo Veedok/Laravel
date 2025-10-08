@@ -1,4 +1,3 @@
-// TableEncryptionControls.jsx
 import React, { useState, useEffect } from 'react';
 import EncryptionService from "@/Pages/Crypto/encryptionService.js";
 import axios from 'axios';
@@ -431,8 +430,6 @@ const TableEncryptionControls = ({
                                         minLength={6}
                                     />
                                 </div>
-
-                                {/* Поле подтверждения пароля только для текущего пользователя */}
                                 {isCurrentUser && (
                                     <div>
                                         <label className="block text-sm font-medium mb-1">

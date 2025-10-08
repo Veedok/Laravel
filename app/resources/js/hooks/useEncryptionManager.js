@@ -29,26 +29,33 @@ export default function useEncryptionManager(auth, showSuccess, showError) {
     };
     const handleDecrypt = async (password) => {
         if (!currentTable) return;
+
         try {
-            await TableEncryptionService.decryptTable(
+            const result = await TableEncryptionService.decryptTable(
                 currentTable.id,
                 password,
                 auth.user.id,
                 currentTable.name
             );
+
             showSuccess(`Таблица "${currentTable.name}" успешно расшифрована!`);
             setPasswordPromptOpen(false);
+
             return { success: true, crypt: false };
+
         } catch (error) {
             console.error('Ошибка расшифровки:', error);
+
+            // Более точные сообщения об ошибках
             if (error.message === 'Неверный пароль') {
-                throw error;
+                throw new Error('Неверный пароль');
+            } else if (error.message.includes('Ключ') || error.message.includes('key')) {
+                throw new Error('Проблема с ключами шифрования. Попробуйте разблокировать таблицу сначала.');
             } else if (error.response) {
-                showError(error.response.data.message || 'Ошибка при расшифровке таблицы');
+                throw new Error(error.response.data.message || 'Ошибка при расшифровке таблицы');
             } else {
-                showError('Не удалось расшифровать таблицу. Проверьте соединение.');
+                throw new Error('Не удалось расшифровать таблицу. Проверьте соединение.');
             }
-            throw error;
         }
     };
     const openEncryptionModal = (table, action) => {

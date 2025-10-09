@@ -21,6 +21,7 @@ Route::get('/aboutUs', function (){
     ]);
 })->name('aboutUs');
 Route::middleware(['banned', 'auth', 'verified'])->group(function () {
+    Route::post('/tablePass', [CryptoController::class, 'changePass'])->name('changeTablePass');
     Route::post('/cryptoData', [CryptoController::class, 'crypto'])->name('cryptoTable');
     Route::post('/decryptData', [CryptoController::class, 'decrypt'])->name('decryptTable');
     Route::get('/dashboard', [TablesController::class, 'mainPage'])->name('dashboard');

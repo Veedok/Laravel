@@ -2,20 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\DTO\CryptoDTO;
-use App\DTO\DecryptDTO;
 use App\DTO\NewTableDTO;
 use App\DTO\Table\AddUserDTO;
 use App\DTO\Table\GetAndRemoveDTO;
 use App\DTO\Table\UpdateDTO;
 use App\DTO\TableDataDTO;
-use App\Models\Transaction;
-use App\Models\UserTable;
 use App\Services\TableService;
-use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Inertia\Response;
 use JsonException;
 

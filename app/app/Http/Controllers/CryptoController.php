@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\DTO\ChangeTablePassDTO;
 use App\DTO\CryptoDTO;
 use App\DTO\DecryptDTO;
 use App\Services\Crypto;
@@ -28,7 +29,7 @@ class CryptoController extends Controller
      */
     public function crypto(CryptoDTO $request): JsonResponse
     {
-       $result = $this->service->crypto($request);
+        $result = $this->service->crypto($request);
         return response()->json($result['content'], $result['status']);
     }
 
@@ -41,5 +42,11 @@ class CryptoController extends Controller
     {
         $result = $this->service->decrypt($request);
         return response()->json($result['content'], $result['status']);
+    }
+
+    public function changePass(ChangeTablePassDTO $request): JsonResponse
+    {
+        $this->service->changePass($request);
+        return response()->json(null, 204);
     }
 }

@@ -10,6 +10,7 @@ export default function TableRow({
                                      onDelete,
                                      onEncrypt,
                                      onDecrypt,
+                                     onPasswordChange,
                                      hasPermission
                                  }) {
     const [isEditing, setIsEditing] = useState(false);
@@ -119,8 +120,8 @@ export default function TableRow({
                                             onClick={onEncrypt}
                                             className={`px-3 py-1 rounded-md text-sm ${
                                                 theme === 'dark'
-                                                    ? 'bg-blue-900 text-blue-300 hover:bg-blue-800'
-                                                    : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                                                    ? 'bg-violet-900 text-violet-300 hover:bg-violet-800'
+                                                    : 'bg-violet-100 text-violet-800 hover:bg-violet-200'
                                             }`}
                                         >
                                             🔐 Шифровать
@@ -130,14 +131,26 @@ export default function TableRow({
                                             onClick={onDecrypt}
                                             className={`px-3 py-1 rounded-md text-sm ${
                                                 theme === 'dark'
-                                                    ? 'bg-green-900 text-green-300 hover:bg-green-800'
-                                                    : 'bg-green-100 text-green-800 hover:bg-green-200'
+                                                    ? 'bg-orange-900 text-orange-300 hover:bg-orange-800'
+                                                    : 'bg-orange-100 text-orange-800 hover:bg-orange-200'
                                             }`}
                                         >
                                             🔓 Расшифровать
                                         </button>
                                     )}
                                 </>
+                            )}
+                            {table.crypt && (
+                                <button
+                                    onClick={() => onPasswordChange(table)}
+                                    className={`px-3 py-1 rounded-md text-sm ${
+                                        theme === 'dark'
+                                            ? 'bg-purple-900 text-purple-300 hover:bg-purple-800'
+                                            : 'bg-purple-100 text-purple-800 hover:bg-purple-200'
+                                    }`}
+                                >
+                                    🔑 Сменить пароль
+                                </button>
                             )}
                             {hasPermission(table.permissions, 'editTables') && (
                                 <button

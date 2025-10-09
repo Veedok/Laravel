@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\DTO\ChangeTablePassDTO;
 use App\DTO\CryptoDTO;
 use App\DTO\DecryptDTO;
 use App\Models\Transaction;
@@ -85,6 +86,13 @@ class Crypto
             $update->name = $transaction['title'];
             $update->save();
         }
+    }
+
+    public function changePass(ChangeTablePassDTO $request)
+    {
+        $request->relation->key = $request->key;
+        $request->relation->salt = $request->salt;
+        $request->relation->safeSave();
     }
 
 

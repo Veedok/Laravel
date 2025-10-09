@@ -171,9 +171,4 @@ readonly class TablesController
             $update->save();
         }
     }
-
-    public function aboutUs()
-    {
-        return $this->tableService->aboutUs();
-    }
 }

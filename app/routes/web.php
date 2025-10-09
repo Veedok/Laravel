@@ -7,15 +7,19 @@ use App\Http\Controllers\TablesController;
 use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\ProfileController;
+use App\Traits\ThemeTrait;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
     return redirect()->route('login');
 });
-
+Route::get('/aboutUs', function (){
+    return Inertia::render("AboutUs", [
+        'theme' => new class { use ThemeTrait; }->getTheme(),
+    ]);
+})->name('aboutUs');
 Route::middleware(['banned', 'auth', 'verified'])->group(function () {
-    Route::get('/aboutUs', [TablesController::class, 'aboutUs'])->name('aboutUs');
     Route::post('/cryptoData', [TablesController::class, 'crypto'])->name('cryptoTable');
     Route::post('/decryptData', [TablesController::class, 'decrypt'])->name('decryptTable');
     Route::get('/dashboard', [TablesController::class, 'mainPage'])->name('dashboard');

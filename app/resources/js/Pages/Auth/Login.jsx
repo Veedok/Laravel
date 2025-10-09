@@ -128,6 +128,12 @@ export default function Login({ status, canResetPassword }) {
                     >
                         Создать аккаунт
                     </Link>
+                    <Link
+                        href={route('aboutUs')}
+                        className="auth-secondary-btn"
+                    >
+                        О нас
+                    </Link>
                 </div>
             </form>
         </GuestLayout>

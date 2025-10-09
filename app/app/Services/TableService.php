@@ -118,7 +118,7 @@ class TableService
         $user = auth()->user();
         $tables = $user?->tables->mapWithKeys(static function ($table) use ($user) {
             $owner = $table->users()->where('is_owner', true)->first();
-            $test = $table->userTables()->where('is_owner', true)->first();
+            $test = $table->userTables()->where('user_id', $user->id)->first();
             return [$table->id => [
                 'owner' => sprintf('Владелец: %s, %s', $owner->email, $owner->name),
                 'name' => $table->name,
@@ -199,12 +199,5 @@ class TableService
         !empty($request->salt) && $data['salt'] = $request->salt;
         $user->tables()->attach($request->table->id, $data);
         return response()->json(null, 204);
-    }
-
-    public function aboutUs()
-    {
-        return Inertia::render("AboutUs", [
-            'theme' => $this->getTheme()
-        ]);
     }
 }

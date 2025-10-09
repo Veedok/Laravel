@@ -11,6 +11,8 @@ import PasswordPromptModal from '../Components/TableControl/PasswordPromptModal.
 import useToast from "@/hooks/useToast.js";
 import useTableManager from '@/hooks/useTableManager.js';
 import useEncryptionManager from '@/hooks/useEncryptionManager.js';
+import usePasswordChangeManager from "@/hooks/usePasswordChangeManager.js";
+import PasswordChangeModal from "@/Components/Crypto/PasswordChangeModal.jsx";
 import { useEffect } from 'react';
 
 export default function TableManager({ theme, tables: initialTables, permissions, userRights, auth }) {
@@ -30,6 +32,17 @@ export default function TableManager({ theme, tables: initialTables, permissions
         openDeleteModal,
         updateTableCryptStatus
     } = useTableManager(initialTables, showSuccess, showError);
+    const handlePasswordChangeClick = (table) => {
+        openPasswordChangeModal(table);
+    };
+    const {
+        passwordChangeModalOpen,
+        currentTable: passwordChangeTable,
+        loading: passwordChangeLoading,
+        setPasswordChangeModalOpen,
+        openPasswordChangeModal,
+        handlePasswordChange
+    } = usePasswordChangeManager(auth, showSuccess, showError);
     const {
         encryptionModalOpen,
         passwordPromptOpen,
@@ -95,6 +108,7 @@ export default function TableManager({ theme, tables: initialTables, permissions
                                 onDelete={openDeleteModal}
                                 onEncrypt={() => handleTableEncryption(table, 'encrypt')}
                                 onDecrypt={() => handleTableEncryption(table, 'decrypt')}
+                                onPasswordChange={handlePasswordChangeClick}
                                 hasPermission={hasPermission}
                             />
                         ))}
@@ -130,6 +144,14 @@ export default function TableManager({ theme, tables: initialTables, permissions
                     title="Удалить таблицу"
                     message={`Вы уверены, что хотите удалить таблицу "${currentTable?.name}"? Это действие нельзя отменить.`}
                     theme={theme}
+                />
+                <PasswordChangeModal
+                    isOpen={passwordChangeModalOpen}
+                    onClose={() => setPasswordChangeModalOpen(false)}
+                    table={passwordChangeTable}
+                    theme={theme}
+                    onSubmit={handlePasswordChange}
+                    loading={passwordChangeLoading}
                 />
                 {toast.show && (
                     <ToastNotification

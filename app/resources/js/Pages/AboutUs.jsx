@@ -1,6 +1,7 @@
-// AboutUs.jsx
+// app/resources/js/Pages/AboutUs.jsx
 import { Head } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import ContentLayout from '@/Layouts/ContentLayout'; // Новый layout
 import {
     ShieldCheckIcon,
     ChartBarIcon,
@@ -10,8 +11,12 @@ import {
     DevicePhoneMobileIcon
 } from '@heroicons/react/24/outline';
 
-export default function AboutUs({ theme }) {
+export default function AboutUs({ auth, theme }) {
     const isDark = theme === 'dark';
+    const isAuthenticated = !!auth?.user;
+
+    // Используем AuthenticatedLayout для авторизованных и ContentLayout для гостей
+    const Layout = isAuthenticated ? AuthenticatedLayout : ContentLayout;
 
     const themeClasses = {
         container: isDark ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900',
@@ -59,18 +64,21 @@ export default function AboutUs({ theme }) {
         }
     ];
 
+    // Пропсы для layout'ов
+    const layoutProps = isAuthenticated ? {
+        header: (
+            <h2 className={`text-xl font-semibold leading-tight ${themeClasses.textPrimary}`}>
+                О нашем сервисе
+            </h2>
+        )
+    } : {};
+
     return (
-        <AuthenticatedLayout
-            header={
-                <h2 className={`text-xl font-semibold leading-tight ${themeClasses.textPrimary}`}>
-                    О нашем сервисе
-                </h2>
-            }
-        >
+        <Layout {...layoutProps}>
             <Head title="О нас - Финансовый менеджер" />
 
+            {/* Весь ваш контент остается без изменений */}
             <div className={`min-h-screen py-8 ${themeClasses.container}`}>
-                {/* Hero Section */}
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-16">
                         <h1 className="text-4xl font-bold mb-6">
@@ -82,8 +90,6 @@ export default function AboutUs({ theme }) {
                             с революционной системой безопасности
                         </p>
                     </div>
-
-                    {/* Основные возможности */}
                     <div className="mb-16">
                         <h2 className="text-3xl font-bold text-center mb-12">
                             <span className={themeClasses.textPrimary}>Все, что нужно для </span>
@@ -111,8 +117,6 @@ export default function AboutUs({ theme }) {
                             ))}
                         </div>
                     </div>
-
-                    {/* Killer Features */}
                     <div className="mb-16">
                         <div className="text-center mb-12">
                             <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-medium mb-4">
@@ -150,8 +154,6 @@ export default function AboutUs({ theme }) {
                             ))}
                         </div>
                     </div>
-
-                    {/* Security Focus */}
                     <div className={`p-8 rounded-2xl ${isDark ? 'bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700' : 'bg-gradient-to-br from-white to-blue-50 border border-blue-100'} text-center`}>
                         <ShieldCheckIcon className="w-16 h-16 mx-auto mb-4 text-blue-600" />
                         <h3 className="text-2xl font-bold mb-4">
@@ -167,8 +169,6 @@ export default function AboutUs({ theme }) {
                             🔒 Ваши финансы видны только вам и вашим доверенным лицам
                         </div>
                     </div>
-
-                    {/* CTA Section */}
                     <div className="text-center mt-16">
                         <h3 className="text-2xl font-bold mb-4">
                             <span className={themeClasses.textPrimary}>Готовы взять финансы </span>
@@ -177,9 +177,25 @@ export default function AboutUs({ theme }) {
                         <p className={`text-lg mb-8 max-w-2xl mx-auto ${themeClasses.textSecondary}`}>
                             Присоединяйтесь к тысячам пользователей, которые уже доверяют нам свои финансовые данные
                         </p>
+                        {!isAuthenticated && (
+                            <div className="space-x-4">
+                                <a
+                                    href={route('register')}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                                >
+                                    Начать бесплатно
+                                </a>
+                                <a
+                                    href={route('login')}
+                                    className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                                >
+                                    Войти в аккаунт
+                                </a>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
-        </AuthenticatedLayout>
+        </Layout>
     );
 }

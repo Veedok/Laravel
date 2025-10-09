@@ -32,6 +32,7 @@ class UserTable extends Pivot
         'key',
         'salt',
         'permissions',
+        'is_owner'
     ];
     /**
      * Проверка прав пользователя

@@ -37,7 +37,7 @@ class CryptoDTO extends AbstractDTO
         $validator = Validator::make($data, [
             'tableId' => 'required|integer|exists:tables,id',
             'users' => 'required|array|min:1',
-            'transactions' => 'required|array',
+            'transactions' => 'nullable|array',
         ]);
         if ($validator->fails()) {
             return static::handleValidationErrors($validator);

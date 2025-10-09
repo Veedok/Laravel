@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\DTO\AbstractDTO;
 use App\DTO\Admin\BanDTO;
 use App\DTO\Admin\UnbanDTO;
+use App\DTO\ChangeTablePassDTO;
 use App\DTO\ChartDTO;
 use App\DTO\CryptoDTO;
 use App\DTO\DecryptDTO;
@@ -41,7 +42,8 @@ class AppServiceProvider extends ServiceProvider
         BanDTO::class,
         UnbanDTO::class,
         CryptoDTO::class,
-        DecryptDTO::class
+        DecryptDTO::class,
+        ChangeTablePassDTO::class
     ];
     /**
      * Register any application services.

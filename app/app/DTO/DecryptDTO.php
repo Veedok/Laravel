@@ -35,7 +35,7 @@ class DecryptDTO extends AbstractDTO
         $data = $request->all();
         $validator = Validator::make($data, [
             'tableId' => 'required|integer|exists:tables,id',
-            'transactions' => 'required|array',
+            'transactions' => 'nullable|array',
         ]);
         if ($validator->fails()) {
             return static::handleValidationErrors($validator);

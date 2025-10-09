@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\ChartController;
+use App\Http\Controllers\CryptoController;
 use App\Http\Controllers\PermissionsController;
 use App\Http\Controllers\TablesController;
 use App\Http\Controllers\ThemeController;
@@ -20,8 +21,8 @@ Route::get('/aboutUs', function (){
     ]);
 })->name('aboutUs');
 Route::middleware(['banned', 'auth', 'verified'])->group(function () {
-    Route::post('/cryptoData', [TablesController::class, 'crypto'])->name('cryptoTable');
-    Route::post('/decryptData', [TablesController::class, 'decrypt'])->name('decryptTable');
+    Route::post('/cryptoData', [CryptoController::class, 'crypto'])->name('cryptoTable');
+    Route::post('/decryptData', [CryptoController::class, 'decrypt'])->name('decryptTable');
     Route::get('/dashboard', [TablesController::class, 'mainPage'])->name('dashboard');
     Route::put('/table', [TablesController::class, 'newTable']);
     Route::post('/table', [TablesController::class, 'getTableData'])->name('tableData');

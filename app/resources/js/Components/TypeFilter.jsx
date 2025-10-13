@@ -6,8 +6,33 @@ const TypeFilter = ({
                         onTypeChange,
                         incomeTotal,
                         expenseTotal,
-                        formatCurrency = (value) => value.toFixed(2)
+                        formatCurrency
                     }) => {
+    // Безопасная функция форматирования
+    const safeFormatCurrency = (value) => {
+        if (formatCurrency) {
+            return formatCurrency(value);
+        }
+
+        // Максимально безопасное преобразование
+        let numValue;
+
+        if (typeof value === 'number') {
+            numValue = value;
+        } else if (typeof value === 'string') {
+            numValue = parseFloat(value);
+        } else {
+            numValue = 0;
+        }
+
+        // Проверяем, что получилось число
+        if (isNaN(numValue) || !isFinite(numValue)) {
+            numValue = 0;
+        }
+        console.log('1');
+        return numValue.toFixed(2);
+    };
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mb-6">
             <div
@@ -31,7 +56,7 @@ const TypeFilter = ({
                 )}
                 <div className="text-center">
                     <div className="text-xs md:text-sm font-medium mb-1">Доходы</div>
-                    <div className="text-lg md:text-2xl font-bold">+{formatCurrency(incomeTotal)}</div>
+                    <div className="text-lg md:text-2xl font-bold">+{safeFormatCurrency(incomeTotal)}</div>
                 </div>
             </div>
             <div
@@ -55,7 +80,7 @@ const TypeFilter = ({
                 )}
                 <div className="text-center">
                     <div className="text-xs md:text-sm font-medium mb-1">Расходы</div>
-                    <div className="text-lg md:text-2xl font-bold">-{formatCurrency(expenseTotal)}</div>
+                    <div className="text-lg md:text-2xl font-bold">-{safeFormatCurrency(expenseTotal)}</div>
                 </div>
             </div>
         </div>

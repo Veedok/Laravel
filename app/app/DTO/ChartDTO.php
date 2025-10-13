@@ -3,6 +3,7 @@
 namespace App\DTO;
 
 use App\Enums\Errors;
+use App\Models\Table;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -18,8 +19,8 @@ class ChartDTO extends AbstractDTO
      * @param int|null $table
      */
     protected function __construct(
-        public ?string $type = 'income',
-        public ?int    $table = null,
+        public ?string        $type = 'income',
+        public Table|int|null $table = null,
     )
     {
     }
@@ -34,7 +35,7 @@ class ChartDTO extends AbstractDTO
         $data = $request->all();
         $validator = Validator::make($data, [
             'type' => 'nullable|string',
-            'table_id' => 'nullable|int|exists:tables,id',
+            'table_id' => 'required|int|exists:tables,id',
         ]);
         if ($validator->fails()) {
             return static::handleValidationErrors($validator);
@@ -53,8 +54,9 @@ class ChartDTO extends AbstractDTO
     protected function selfValidate(): void
     {
         /** TODO Если добавятся права на просмотр статистики таблиц то тут сделать проверку */
-        if (isset($this->table) && !$this->requestUser->tables()->find($this->table)?->exists()){
+        if (isset($this->table) && !$this->requestUser->tables()->find($this->table)?->exists()) {
             $this->makeError(Errors::TABLE_NOT_FOUND, 404);
         }
+        $this->table = $this->findModel($this->table, 'table');
     }
 }

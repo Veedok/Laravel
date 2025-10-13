@@ -44,7 +44,7 @@ export default function AboutUs({ auth, theme }) {
         },
         {
             icon: ShieldCheckIcon,
-            title: "Военная безопасность данных",
+            title: "Исключительная безопасность данных",
             description: "Многоуровневая система защиты гарантирует конфиденциальность вашей финансовой информации на всех этапах работы."
         }
     ];
@@ -178,16 +178,16 @@ export default function AboutUs({ auth, theme }) {
                             Присоединяйтесь к тысячам пользователей, которые уже доверяют нам свои финансовые данные
                         </p>
                         {!isAuthenticated && (
-                            <div className="space-x-4">
+                            <div className="flex flex-col sm:flex-row gap-4 justify-center">
                                 <a
                                     href={route('register')}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors text-center"
                                 >
                                     Начать бесплатно
                                 </a>
                                 <a
                                     href={route('login')}
-                                    className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                                    className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-medium transition-colors text-center"
                                 >
                                     Войти в аккаунт
                                 </a>

@@ -5,22 +5,57 @@ import axios from 'axios';
 import EncryptionService from "@/Pages/Crypto/encryptionService.js";
 import PasswordPrompt from '@/Components/Crypto/PasswordPrompt';
 
+// Цветовые палитры
 const INCOME_COLORS = ['#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57', '#FF9FF3', '#54A0FF'];
 const EXPENSE_COLORS = ['#FF6B6B', '#FF9F43', '#F368E0', '#FF7979', '#EE5A24', '#ED4C67'];
 
+// Компонент выбора таблицы
+const TableSelector = ({ theme, tables, selectedTable, onTableChange, disabled = false }) => {
+    return (
+        <div className="mb-6">
+            <label className={`block text-sm font-medium mb-2 ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+            }`}>
+                Выберите таблицу
+            </label>
+            <select
+                value={selectedTable}
+                onChange={(e) => onTableChange(e.target.value)}
+                disabled={disabled}
+                className={`w-full p-2 border rounded transition-colors ${
+                    theme === 'dark'
+                        ? 'bg-gray-700 border-gray-600 text-white disabled:bg-gray-800 disabled:text-gray-500'
+                        : 'bg-white border-gray-300 text-gray-900 disabled:bg-gray-100 disabled:text-gray-500'
+                } ${disabled ? 'cursor-not-allowed opacity-70' : ''}`}
+            >
+                {tables.map((table) => (
+                    <option key={table.id} value={table.id}>
+                        {table.name}
+                    </option>
+                ))}
+            </select>
+        </div>
+    );
+};
+
+// Компонент графика
 const SimpleChart = ({ data, theme, type }) => {
     const canvasRef = useRef(null);
     const chartInstance = useRef(null);
 
     useEffect(() => {
         if (!data || data.length === 0 || !canvasRef.current) return;
+
         const loadChart = async () => {
             const Chart = (await import('chart.js/auto')).default;
+
             if (chartInstance.current) {
                 chartInstance.current.destroy();
             }
+
             const ctx = canvasRef.current.getContext('2d');
             const colors = type === 'income' ? INCOME_COLORS : EXPENSE_COLORS;
+
             chartInstance.current = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
@@ -78,12 +113,15 @@ const SimpleChart = ({ data, theme, type }) => {
             </div>
         );
     }
+
     return (
         <div className="h-64">
             <canvas ref={canvasRef} />
         </div>
     );
 };
+
+// Компонент TypeFilter
 const TypeFilter = ({ theme, selectedType, onTypeChange, incomeTotal, expenseTotal }) => {
     const safeFormat = (value) => {
         const num = Number(value) || 0;
@@ -132,13 +170,19 @@ const TypeFilter = ({ theme, selectedType, onTypeChange, incomeTotal, expenseTot
 
 export default function ChartsIndex() {
     const { auth, theme, tables } = usePage().props;
+
+    // Состояния
     const [loading, setLoading] = useState(false);
     const [selectedType, setSelectedType] = useState('income');
     const [selectedTable, setSelectedTable] = useState(tables.length > 0 ? tables[0].id : '');
+
+    // Данные
     const [statistics, setStatistics] = useState({
         income: { items: [], total: 0 },
         expense: { items: [], total: 0 }
     });
+
+    // Шифрование
     const [needsPassword, setNeedsPassword] = useState(false);
     const [passwordError, setPasswordError] = useState('');
     const [userPasswords, setUserPasswords] = useState({});
@@ -146,22 +190,32 @@ export default function ChartsIndex() {
         income: null,
         expense: null
     });
+
+    // Получение имени текущей таблицы
     const getTableName = () => {
         const table = tables.find(t => t.id == selectedTable);
         return table ? table.name : 'Неизвестная таблица';
     };
+
+    // Безопасное преобразование в число
     const safeNumber = (value) => {
         const num = Number(value);
         return isNaN(num) ? 0 : num;
     };
+
+    // Функция для расшифровки данных
     const decryptData = async (encryptedResponse, password) => {
         try {
             const { cryptKey, cryptSalt, items } = encryptedResponse.data;
+
+            // Расшифровываем ключ данных с помощью пароля пользователя
             const kek = await EncryptionService.deriveKeyFromPassword(
                 password,
                 EncryptionService.hexToUint8Array(cryptSalt)
             );
             const dataKey = await EncryptionService.decryptDataKey(cryptKey, kek);
+
+            // Расшифровываем каждую сумму
             const decryptedItems = await Promise.all(
                 items.map(async (item) => {
                     const decryptedSum = await EncryptionService.decryptData(item.sum, dataKey);
@@ -173,6 +227,8 @@ export default function ChartsIndex() {
                     };
                 })
             );
+
+            // Группируем по id тега
             const grouped = decryptedItems.reduce((acc, item) => {
                 if (!acc[item.id]) {
                     acc[item.id] = { ...item };
@@ -182,18 +238,24 @@ export default function ChartsIndex() {
                 }
                 return acc;
             }, {});
+
             return Object.values(grouped);
+
         } catch (error) {
             console.error('Decryption error:', error);
             throw new Error('Неверный пароль или ошибка расшифровки');
         }
     };
+
+    // Загрузка данных
     const loadStatistics = async () => {
         if (!selectedTable) return;
+
         try {
             setLoading(true);
             setPasswordError('');
             setNeedsPassword(false);
+
             const [incomeResponse, expenseResponse] = await Promise.all([
                 axios.post('/api/charts/tag-statistics', {
                     type: 'income',
@@ -204,9 +266,12 @@ export default function ChartsIndex() {
                     table_id: selectedTable
                 })
             ]);
+
             const hasPassword = userPasswords[selectedTable];
             const incomeEncrypted = incomeResponse.data.crypt;
             const expenseEncrypted = expenseResponse.data.crypt;
+
+            // Если данные зашифрованы и пароля нет - сохраняем зашифрованные данные и просим пароль
             if ((incomeEncrypted || expenseEncrypted) && !hasPassword) {
                 setEncryptedData({
                     income: incomeEncrypted ? incomeResponse : null,
@@ -216,13 +281,18 @@ export default function ChartsIndex() {
                 setLoading(false);
                 return;
             }
+
+            // Обработка данных
             const processData = async (response, type) => {
                 if (!response.data.items) return { items: [], total: 0 };
+
                 if (response.data.crypt && hasPassword) {
+                    // Расшифровываем данные
                     const decryptedItems = await decryptData(response, hasPassword);
                     const total = decryptedItems.reduce((sum, item) => sum + safeNumber(item.total_sum), 0);
                     return { items: decryptedItems, total };
                 } else if (!response.data.crypt) {
+                    // Незашифрованные данные
                     const items = response.data.items || [];
                     const grouped = items.reduce((acc, item) => {
                         if (!acc[item.id]) {
@@ -237,20 +307,25 @@ export default function ChartsIndex() {
                         acc[item.id].transaction_count += 1;
                         return acc;
                     }, {});
+
                     const processedItems = Object.values(grouped);
                     const total = processedItems.reduce((sum, item) => sum + item.total_sum, 0);
+
                     return { items: processedItems, total };
                 } else {
                     return { items: [], total: 0 };
                 }
             };
+
             const incomeData = await processData(incomeResponse, 'income');
             const expenseData = await processData(expenseResponse, 'expense');
+
             setStatistics({
                 income: incomeData,
                 expense: expenseData
             });
             setNeedsPassword(false);
+
         } catch (error) {
             console.error('Error loading statistics:', error);
             if (error.message.includes('Неверный пароль')) {
@@ -267,31 +342,42 @@ export default function ChartsIndex() {
             setLoading(false);
         }
     };
+
+    // Обработка ввода пароля
     const handlePasswordConfirm = async (password) => {
         try {
             setPasswordError('');
             setLoading(true);
+
+            // Сохраняем пароль
             setUserPasswords(prev => ({
                 ...prev,
                 [selectedTable]: password
             }));
+
+            // Расшифровываем сохраненные данные
             const processEncrypted = async (encryptedResponse) => {
                 if (!encryptedResponse) return { items: [], total: 0 };
+
                 const decryptedItems = await decryptData(encryptedResponse, password);
                 const total = decryptedItems.reduce((sum, item) => sum + safeNumber(item.total_sum), 0);
                 return { items: decryptedItems, total };
             };
+
             const incomeData = await processEncrypted(encryptedData.income);
             const expenseData = await processEncrypted(encryptedData.expense);
+
             setStatistics({
                 income: incomeData,
                 expense: expenseData
             });
             setNeedsPassword(false);
             setEncryptedData({ income: null, expense: null });
+
         } catch (error) {
             console.error('Password error:', error);
             setPasswordError('Неверный пароль');
+            // Удаляем неверный пароль
             setUserPasswords(prev => {
                 const newPasswords = { ...prev };
                 delete newPasswords[selectedTable];
@@ -301,19 +387,13 @@ export default function ChartsIndex() {
             setLoading(false);
         }
     };
+
+    // Очистка ошибки пароля
     const handleClearPasswordError = () => {
         setPasswordError('');
     };
-    useEffect(() => {
-        if (selectedTable) {
-            loadStatistics();
-        }
-    }, [selectedTable]);
 
-    const currentData = useMemo(() => {
-        return statistics[selectedType] || { items: [], total: 0 };
-    }, [selectedType, statistics]);
-
+    // Обработчик смены таблицы
     const handleTableChange = (tableId) => {
         setSelectedTable(tableId);
         setPasswordError('');
@@ -325,145 +405,154 @@ export default function ChartsIndex() {
         setEncryptedData({ income: null, expense: null });
     };
 
+    // Эффекты
+    useEffect(() => {
+        if (selectedTable) {
+            loadStatistics();
+        }
+    }, [selectedTable]);
+
+    // Текущие данные для отображения
+    const currentData = useMemo(() => {
+        return statistics[selectedType] || { items: [], total: 0 };
+    }, [selectedType, statistics]);
+
     const handleTypeChange = (type) => {
         setSelectedType(type);
     };
 
-    if (needsPassword) {
-        return (
-            <AuthenticatedLayout>
-                <Head title="Требуется пароль" />
-                <div className="py-8">
-                    <div className="max-w-md mx-auto sm:px-6 lg:px-8">
-                        <PasswordPrompt
-                            theme={theme}
-                            onUnlock={handlePasswordConfirm}
-                            loading={loading}
-                            error={passwordError}
-                            onClearError={handleClearPasswordError}
-                        />
-                    </div>
+    // Основной контент (статистика)
+    const StatisticsContent = () => (
+        <div className="space-y-8">
+            {/* График */}
+            <div>
+                <h3 className={`text-lg font-semibold mb-4 ${
+                    theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                    {selectedType === 'income' ? 'Доходы' : 'Расходы'} по тегам
+                </h3>
+                <SimpleChart
+                    data={currentData.items}
+                    theme={theme}
+                    type={selectedType}
+                />
+            </div>
+
+            {/* Список тегов */}
+            <div>
+                <h3 className={`text-lg font-semibold mb-4 ${
+                    theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                    Детализация ({currentData.items.length} тегов)
+                </h3>
+                <div className="space-y-3">
+                    {currentData.items.map((tag, index) => {
+                        const colors = selectedType === 'income' ? INCOME_COLORS : EXPENSE_COLORS;
+                        const color = colors[index % colors.length];
+
+                        return (
+                            <div
+                                key={tag.id}
+                                className={`flex justify-between items-center p-3 rounded border ${
+                                    theme === 'dark'
+                                        ? 'bg-gray-700 border-gray-600'
+                                        : 'bg-gray-50 border-gray-200'
+                                }`}
+                            >
+                                <div className="flex items-center">
+                                    <div
+                                        className="w-3 h-3 rounded mr-3"
+                                        style={{ backgroundColor: color }}
+                                    />
+                                    <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}>
+                                        {tag.name || 'Без названия'}
+                                    </span>
+                                </div>
+                                <div className="text-right">
+                                    <div className={`font-semibold ${
+                                        selectedType === 'income' ? 'text-green-600' : 'text-red-600'
+                                    }`}>
+                                        {selectedType === 'income' ? '+' : '-'}{safeNumber(tag.total_sum).toFixed(2)}
+                                    </div>
+                                    <div className={`text-sm ${
+                                        theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                                    }`}>
+                                        {tag.transaction_count} транз.
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
-            </AuthenticatedLayout>
-        );
-    }
+            </div>
+        </div>
+    );
 
     return (
         <AuthenticatedLayout>
             <Head title="Статистика по тегам" />
+
             <div className="py-8">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
                     <div className={`overflow-hidden shadow-sm sm:rounded-lg ${
                         theme === 'dark' ? 'bg-gray-800' : 'bg-white'
                     }`}>
                         <div className="p-6">
+                            {/* Заголовок */}
                             <h1 className={`text-2xl font-bold mb-6 ${
                                 theme === 'dark' ? 'text-white' : 'text-gray-900'
                             }`}>
-                                Статистика по тегам - {getTableName()}
+                                Статистика по тегам {selectedTable && `- ${getTableName()}`}
                             </h1>
-                            <TypeFilter
+
+                            {/* Выбор таблицы - всегда доступен */}
+                            <TableSelector
                                 theme={theme}
-                                selectedType={selectedType}
-                                onTypeChange={handleTypeChange}
-                                incomeTotal={statistics.income.total}
-                                expenseTotal={statistics.expense.total}
+                                tables={tables}
+                                selectedTable={selectedTable}
+                                onTableChange={handleTableChange}
+                                disabled={loading}
                             />
-                            <div className="mb-6">
-                                <label className={`block text-sm font-medium mb-2 ${
-                                    theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-                                }`}>
-                                    Таблица
-                                </label>
-                                <select
-                                    value={selectedTable}
-                                    onChange={(e) => handleTableChange(e.target.value)}
-                                    className={`w-full p-2 border rounded ${
-                                        theme === 'dark'
-                                            ? 'bg-gray-700 border-gray-600 text-white'
-                                            : 'bg-white border-gray-300 text-gray-900'
-                                    }`}
-                                >
-                                    {tables.map((table) => (
-                                        <option key={table.id} value={table.id}>
-                                            {table.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            {loading ? (
-                                <div className="text-center py-12">
-                                    <div className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>
-                                        Загрузка данных...
-                                    </div>
-                                </div>
-                            ) : currentData.items.length === 0 ? (
-                                <div className="text-center py-12">
-                                    <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>
-                                        Нет данных для отображения
-                                    </p>
+
+                            {/* Если требуется пароль - показываем блок ввода пароля */}
+                            {needsPassword ? (
+                                <div className="mb-6">
+                                    <PasswordPrompt
+                                        theme={theme}
+                                        onUnlock={handlePasswordConfirm}
+                                        loading={loading}
+                                        error={passwordError}
+                                        onClearError={handleClearPasswordError}
+                                    />
                                 </div>
                             ) : (
-                                <div className="space-y-8">
-                                    <div>
-                                        <h3 className={`text-lg font-semibold mb-4 ${
-                                            theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-                                        }`}>
-                                            {selectedType === 'income' ? 'Доходы' : 'Расходы'} по тегам
-                                        </h3>
-                                        <SimpleChart
-                                            data={currentData.items}
-                                            theme={theme}
-                                            type={selectedType}
-                                        />
-                                    </div>
-                                    <div>
-                                        <h3 className={`text-lg font-semibold mb-4 ${
-                                            theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-                                        }`}>
-                                            Детализация ({currentData.items.length} тегов)
-                                        </h3>
-                                        <div className="space-y-3">
-                                            {currentData.items.map((tag, index) => {
-                                                const colors = selectedType === 'income' ? INCOME_COLORS : EXPENSE_COLORS;
-                                                const color = colors[index % colors.length];
+                                <>
+                                    {/* Фильтры по типу */}
+                                    <TypeFilter
+                                        theme={theme}
+                                        selectedType={selectedType}
+                                        onTypeChange={handleTypeChange}
+                                        incomeTotal={statistics.income.total}
+                                        expenseTotal={statistics.expense.total}
+                                    />
 
-                                                return (
-                                                    <div
-                                                        key={tag.id}
-                                                        className={`flex justify-between items-center p-3 rounded border ${
-                                                            theme === 'dark'
-                                                                ? 'bg-gray-700 border-gray-600'
-                                                                : 'bg-gray-50 border-gray-200'
-                                                        }`}
-                                                    >
-                                                        <div className="flex items-center">
-                                                            <div
-                                                                className="w-3 h-3 rounded mr-3"
-                                                                style={{ backgroundColor: color }}
-                                                            />
-                                                            <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}>
-                                                                {tag.name || 'Без названия'}
-                                                            </span>
-                                                        </div>
-                                                        <div className="text-right">
-                                                            <div className={`font-semibold ${
-                                                                selectedType === 'income' ? 'text-green-600' : 'text-red-600'
-                                                            }`}>
-                                                                {selectedType === 'income' ? '+' : '-'}{safeNumber(tag.total_sum).toFixed(2)}
-                                                            </div>
-                                                            <div className={`text-sm ${
-                                                                theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                                                            }`}>
-                                                                {tag.transaction_count} транз.
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
+                                    {/* Контент */}
+                                    {loading ? (
+                                        <div className="text-center py-12">
+                                            <div className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>
+                                                Загрузка данных...
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
+                                    ) : currentData.items.length === 0 ? (
+                                        <div className="text-center py-12">
+                                            <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>
+                                                Нет данных для отображения
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <StatisticsContent />
+                                    )}
+                                </>
                             )}
                         </div>
                     </div>

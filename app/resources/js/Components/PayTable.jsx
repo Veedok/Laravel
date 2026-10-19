@@ -51,6 +51,8 @@ export default function PayTable({
         showError
     } = useTransactions(data, activeTableId, isEncrypted, isLocked, onLockTable);
     const { decryptedData } = useEncryptionOperations(activeTableId, isEncrypted, isLocked, transactions);
+    const [sortField, setSortField] = useState(null); // 'name' | 'type' | 'sum' | 'date'
+    const [sortDirection, setSortDirection] = useState('asc'); // 'asc' | 'desc'\
     const displayData = useMemo(() => {
         return decryptedData;
     }, [decryptedData]);
@@ -60,6 +62,60 @@ export default function PayTable({
             filterType === 'income' ? item.changeBalance : !item.changeBalance
         );
     }, [displayData, filterType]);
+    const parseDate = (value) => {
+        if (!value) return 0;
+        if (value instanceof Date) return value.getTime();
+
+        const str = String(value).trim();
+
+        // DD.MM.YYYY или DD.MM.YYYY HH:mm(:ss)
+        const m = str.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
+        if (m) {
+            const [, d, mo, y, h = 0, mi = 0, s = 0] = m;
+            return new Date(+y, +mo - 1, +d, +h, +mi, +s).getTime();
+        }
+
+        // fallback — ISO и прочее
+        const t = new Date(str).getTime();
+        return isNaN(t) ? 0 : t;
+    };
+    const sortedData = useMemo(() => {
+        if (!sortField) return filteredData;
+
+        const dir = sortDirection === 'asc' ? 1 : -1;
+
+        return [...filteredData].sort((a, b) => {
+            let aVal, bVal;
+            switch (sortField) {
+                case 'name':
+                    aVal = (a.title ?? '').toString().toLowerCase();
+                    bVal = (b.title ?? '').toString().toLowerCase();
+                    return aVal.localeCompare(bVal) * dir;
+
+                case 'type':
+                    // income = true, expense = false
+                    aVal = a.changeBalance ? 1 : 0;
+                    bVal = b.changeBalance ? 1 : 0;
+                    return (aVal - bVal) * dir;
+
+                case 'sum':
+                    aVal = typeof a.sum === 'string' ? parseFloat(a.sum) : a.sum;
+                    bVal = typeof b.sum === 'string' ? parseFloat(b.sum) : b.sum;
+                    aVal = isNaN(aVal) ? 0 : aVal;
+                    bVal = isNaN(bVal) ? 0 : bVal;
+                    return (aVal - bVal) * dir;
+
+                case 'date': {
+                    const aTime = parseDate(a.date);
+                    const bTime = parseDate(b.date);
+                    return (aTime - bTime) * dir;
+                }
+
+                default:
+                    return 0;
+            }
+        });
+    }, [filteredData, sortField, sortDirection]);
     const totals = useMemo(() => {
         return displayData.reduce((acc, item) => {
             const amount = typeof item.sum === 'string' ? parseFloat(item.sum) : item.sum;
@@ -73,6 +129,19 @@ export default function PayTable({
             return acc;
         }, { income: 0, expense: 0 });
     }, [displayData]);
+
+    useEffect(() => {
+        setSortField(null);
+        setSortDirection('asc');
+    }, [activeTableId]);
+    const handleSort = (field) => {
+        if (sortField === field) {
+            setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortField(field);
+            setSortDirection('asc');
+        }
+    };
     const handleSaveTransaction = async (e) => {
         e.preventDefault();
         try {
@@ -114,6 +183,19 @@ export default function PayTable({
             ? 'bg-gray-600 hover:bg-gray-700 text-white'
             : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
     };
+    const SortHeader = ({ field, children, align = 'left' }) => (
+        <th
+            onClick={() => handleSort(field)}
+            className={`px-6 py-3 text-${align} text-xs font-medium uppercase tracking-wider cursor-pointer select-none hover:opacity-80`}
+        >
+        <span className="inline-flex items-center gap-1">
+            {children}
+            <span className="text-[10px]">
+                {sortField === field ? (sortDirection === 'asc' ? '▲' : '▼') : '↕'}
+            </span>
+        </span>
+        </th>
+    );
     return (
         <div>
             {successMessage && (
@@ -172,25 +254,17 @@ export default function PayTable({
                     <table className={`min-w-full divide-y divide-gray-200 dark:divide-gray-700 ${themeClasses.table}`}>
                         <thead className={themeClasses.tableHeader}>
                         <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                                Название
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                                Тип
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                                Сумма
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                                Дата
-                            </th>
+                            <SortHeader field="name">Название</SortHeader>
+                            <SortHeader field="type">Тип</SortHeader>
+                            <SortHeader field="sum">Сумма</SortHeader>
+                            <SortHeader field="date">Дата</SortHeader>
                             <th className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
                                 Действия
                             </th>
                         </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                        {filteredData.map((item) => (
+                        {sortedData.map((item) => (
                             <DesktopTableRow
                                 key={item.id}
                                 item={item}
@@ -208,7 +282,7 @@ export default function PayTable({
             )}
             {isMobile && (
                 <div className="space-y-4">
-                    {filteredData.map((item) => (
+                    {sortedData.map((item) => (
                         <MobileTransactionCard
                             key={item.id}
                             item={item}

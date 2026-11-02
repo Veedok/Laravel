@@ -29,7 +29,15 @@ return [
     */
 
     'disks' => [
-
+        'bunny' => [
+            'driver' => 's3',
+            'key' => env('BUNNY_KEY'),
+            'secret' => env('BUNNY_SECRET'),
+            'region' => env('BUNNY_REGION'),
+            'bucket' => env('BUNNY_BUCKET'),
+            'endpoint' => env('BUNNY_ENDPOINT'),
+            'use_path_style_endpoint' => true, // Обязательно для Bunny
+        ],
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),

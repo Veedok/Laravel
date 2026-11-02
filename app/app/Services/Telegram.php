@@ -12,7 +12,7 @@ class Telegram
 {
     /** @var Client Клиент для http запросов */
     protected Client $client;
-    /** @var mixed Токен бота  */
+    /** @var mixed Токен бота */
     protected mixed $botToken;
 
     /**
@@ -21,7 +21,7 @@ class Telegram
     public function __construct()
     {
         $this->client = new Client([
-            'base_uri' => 'https://api.telegram.org/bot'.env('TELEGRAM_BOT_TOKEN').'/'
+            'base_uri' => 'https://api.telegram.org/bot' . env('TELEGRAM_BOT_TOKEN') . '/'
         ]);
         $this->botToken = env('TELEGRAM_BOT_TOKEN');
     }
@@ -36,28 +36,25 @@ class Telegram
      */
     public function sendFile($chatId, $filePath, string $caption = ''): mixed
     {
-        try {
-            $response = $this->client->post('sendDocument', [
-                'multipart' => [
-                    [
-                        'name' => 'chat_id',
-                        'contents' => $chatId
-                    ],
-                    [
-                        'name' => 'document',
-                        'contents' => fopen($filePath, 'rb'),
-                        'filename' => basename($filePath)
-                    ],
-                    [
-                        'name' => 'caption',
-                        'contents' => $caption
-                    ]
+        $response = $this->client->post('sendDocument', [
+            'multipart' => [
+                [
+                    'name' => 'chat_id',
+                    'contents' => $chatId
+                ],
+                [
+                    'name' => 'document',
+                    'contents' => fopen($filePath, 'rb'),
+                    'filename' => basename($filePath)
+                ],
+                [
+                    'name' => 'caption',
+                    'contents' => $caption
                 ]
-            ]);
+            ]
+        ]);
 
-            return $response->getBody()->getContents();
-        } catch (Exception $e) {
-            return $e->getMessage();
-        }
+        return $response->getBody()->getContents();
+
     }
 }
